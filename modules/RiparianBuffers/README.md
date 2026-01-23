@@ -1,4 +1,4 @@
-# RiparianBuffers
+# EasternCanadaHydrology
 
 This module computes raster-based riparian influence from hydrological features.
 It does **not** make landbase, harvesting, or legal decisions.

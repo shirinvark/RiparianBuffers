@@ -1,0 +1,325 @@
+## Everything in this file and any files in the R directory are sourced during `simInit()`;
+## all functions and objects are put into the `simList`.
+## To use objects, use `sim$xxx` (they are globally available to all modules).
+## Functions can be used inside any function that was sourced in this module;
+## they are namespaced to the module, just like functions in R packages.
+## If exact location is required, functions will be: `sim$.mods$<moduleName>$FunctionName`.
+defineModule(sim, list(
+  name = "EasternCanadaHydrology",
+  description = "Computes raster-based riparian influence (fractional) from upstream hydrology inputs.
+No data download. No landbase decisions",
+  keywords = c("hydrology", "riparian", "buffer"),
+  authors = structure(list(list(given = c("First", "Middle"), family = "Last", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
+  childModules = character(0),
+  version = list(EasternCanadaHydrology = "0.0.0.9000"),
+  timeframe = as.POSIXlt(c(NA, NA)),
+  timeunit = "year",
+  citation = list("citation.bib"),
+  documentation = list("NEWS.md", "README.md", "EasternCanadaHydrology.Rmd"),
+  reqdPkgs = list(
+    "PredictiveEcology/SpaDES.core@development (>= 2.1.8.9001)",
+    "terra"
+  )
+  ,
+  parameters = bindrows(
+    defineParameter(
+      "riparianBuffer_m",
+      "numeric",
+      30,
+      0,
+      NA,
+      "Uniform riparian buffer distance (m) applied to hydrology streams"
+    ),
+    defineParameter(
+      "riparianPolicy",
+      "data.frame",
+      NULL,
+      NA,
+      NA,
+      "Province-based riparian buffer policy (columns: province, buffer_m)"
+    ),
+    
+    defineParameter(
+      "hydroRaster_m",
+      "numeric",
+      100,
+      0,
+      NA,
+      "Resolution (m) used to compute proportional riparian fraction"
+    )
+    
+  ),
+  inputObjects = bindrows(
+    
+    expectsInput(
+      objectName  = "PlanningRaster",
+      objectClass = "SpatRaster",
+      desc        = "Coarse-resolution planning raster supplied by upstream module",
+      sourceURL  = NA
+    ),
+    ## Provinces are supplied by EasternCanadaDataPrep
+    ## and are used ONLY to spatially apply province-specific
+    ## riparian buffer policies (no landbase decisions here).
+    expectsInput(
+      objectName  = "Provinces",
+      objectClass = "SpatVector",
+      desc        = "Provincial boundaries with province_code"
+    ),
+    
+    expectsInput(
+      objectName  = "Hydrology",
+      objectClass = "list",
+      desc = "Hydrology inputs prepared upstream (EasternCanadaDataPrep); must contain element `streams` (SpatVector)"
+    ),
+  ),
+  outputObjects = bindrows(
+    createsOutput(
+      objectName  = "Riparian",
+      objectClass = "list",
+      desc        = "Proportional riparian fraction raster and metadata"
+    )
+  )
+))
+## Main event for EasternCanadaHydrology.
+## Translates jurisdiction-specific riparian policy
+## into a spatially explicit buffer raster, then
+## computes proportional riparian influence.
+
+doEvent.EasternCanadaHydrology <- function(sim, eventTime, eventType) {
+  
+  switch(
+    eventType,
+    
+    init = {
+      
+      ## ----------------------------------
+      ## 1) Province raster
+      ## ----------------------------------
+      ## Rasterize provincial boundaries to the planning grid
+      ## so that each planning cell is assigned a province_code.
+      ## This raster is used exclusively to map policy-defined
+      ## buffer distances to space.
+      ## It is not stored as an output to avoid duplicating
+      ## landbase or jurisdiction layers downstream.
+      
+      prov_r <- terra::rasterize(
+        sim$Provinces,
+        sim$PlanningRaster,
+        field = "province_code"
+      )
+      
+      ## ----------------------------------
+      ## 2) Build bufferRaster from policy
+      ## ----------------------------------
+      ## Province-level riparian policy table
+      ## Expected columns:
+      ##   - province_code : character (e.g., ON, QC, NB)
+      ##   - buffer_m      : numeric buffer distance in meters
+      ##
+      ## Policy is supplied by the user to allow
+      ## jurisdiction-specific riparian rules.
+      ## Design note:
+      ## Riparian policy is expressed as a simple table
+      ## rather than hard-coded logic, to allow:
+      ##  - transparent comparison across jurisdictions
+      ##  - easy sensitivity testing
+      ##  - future extension to scenario-based policies
+      
+      policy <- P(sim)$riparianPolicy
+      
+      if (is.null(policy)) {
+        stop("riparianPolicy must be provided when using province-based buffers.")
+      }
+      ## Build a spatially-explicit buffer raster where
+      ## each cell stores the riparian buffer distance (m)
+      ## defined by its province-specific policy.
+      ## This raster enables variable-width buffers
+      ## without modifying hydrology geometry.
+      
+      bufferRaster <- prov_r
+      terra::values(bufferRaster) <- NA
+      
+      for (i in seq_len(nrow(policy))) {
+        idx <- prov_r == policy$province_code[i]
+        bufferRaster[idx] <- policy$buffer_m[i]
+      }
+      
+      ## ----------------------------------
+      ## 3) Compute riparian fraction
+      ## ----------------------------------
+      ## Compute proportional riparian influence using
+      ## a variable buffer raster derived from policy.
+      ## Hydrology geometry remains unchanged; only
+      ## the effective buffer distance varies spatially.
+      ## Note:
+      ## This step computes *physical influence* only.
+      ## Interpretation as a constraint, exclusion, or
+      ## weighting is deferred to downstream modules.
+      
+      rip_frac <- buildRiparianFraction(
+        PlanningRaster = sim$PlanningRaster,
+        streams        = sim$Hydrology$streams,
+        bufferRaster   = bufferRaster,
+        hydroRaster_m  = P(sim)$hydroRaster_m
+      )
+      
+      ## ----------------------------------
+      ## 4) Save output
+      ## ----------------------------------
+      ## Riparian output:
+      ## - riparianFraction : proportional influence raster
+      ## - raster_m         : resolution used for computation
+      ## - policy           : policy table used (for provenance)
+      ## No harvest, landbase, or eligibility decisions
+      ## are made at this stage.
+      
+      sim$Riparian <- list(
+        riparianFraction = rip_frac,
+        raster_m         = P(sim)$hydroRaster_m,
+        policy           = policy
+      )
+    }
+  )
+  
+  invisible(sim)
+}
+
+## Compute riparian influence as a fractional raster.
+##
+## Two mutually exclusive modes are supported:
+## 1) Uniform buffer distance applied everywhere (riparianBuffer_m)
+## 2) Spatially variable buffer distances supplied as a raster (bufferRaster),
+##    typically derived from jurisdiction-specific policy.
+## Core riparian influence engine.
+## Designed to be policy-agnostic and reusable
+## across different regulatory or ecological contexts.
+
+buildRiparianFraction <- function(
+    PlanningRaster,
+    streams,
+    riparianBuffer_m = NULL,   # buffer ثابت (اختیاری)
+    bufferRaster     = NULL,   # buffer متغیر (اختیاری)
+    hydroRaster_m    = 100
+) {
+  ## Enforce a single buffering strategy:
+  ## either uniform (riparianBuffer_m) OR
+  ## spatially variable (bufferRaster), but never both.
+  
+  # --- sanity check ---
+  if (is.null(streams)) {
+    stop("Hydrology$streams is missing. Run EasternCanadaDataPrep before EasternCanadaHydrology.")
+  }
+  
+  if (!inherits(streams, "SpatVector")) {
+    stop("Hydrology$streams must be a SpatVector.")
+  }
+  
+  if (is.null(riparianBuffer_m) && is.null(bufferRaster)) {
+    stop("Either riparianBuffer_m or bufferRaster must be provided.")
+  }
+  
+  if (!is.null(riparianBuffer_m) && !is.null(bufferRaster)) {
+    stop("Provide only one of riparianBuffer_m or bufferRaster, not both.")
+  }
+  
+  # --- CRS consistency ---
+  if (!terra::same.crs(streams, PlanningRaster)) {
+    streams <- terra::project(streams, PlanningRaster)
+  }
+  ## Internal high-resolution raster used to compute
+  ## proportional riparian influence.
+  ##
+  ## Resolution may differ from PlanningRaster to
+  ## better capture narrow hydrological features.
+  ## Performance note:
+  ## hydroRaster_m controls the trade-off between
+  ## spatial accuracy and computational cost.
+  ## This is intentionally decoupled from PlanningRaster.
+  
+  # --- raster template ---
+  hydro_template <- terra::rast(
+    terra::ext(PlanningRaster),
+    resolution = hydroRaster_m,
+    crs = terra::crs(PlanningRaster)
+  )
+  terra::values(hydro_template) <- 0
+  
+  # =========================================================
+  # CASE 1: UNIFORM BUFFER (رفتار فعلی – بدون تغییر)
+  # =========================================================
+  ## Uniform buffer case:
+  ## applies a single buffer distance to all streams.
+  ## This preserves legacy behaviour and provides
+  ## a simple baseline for testing and comparison.
+  
+  if (!is.null(riparianBuffer_m)) {
+    
+    streams_buf <- terra::buffer(streams, width = riparianBuffer_m)
+    
+    riparian_fraction <- terra::rasterize(
+      streams_buf,
+      hydro_template,
+      cover = TRUE,
+      background = 0
+    )
+    
+    return(riparian_fraction)
+  }
+  
+  # =========================================================
+  # CASE 2: VARIABLE BUFFER (برای آینده)
+  # =========================================================
+  ## This approach decouples policy decisions
+  ## from hydrological representation.
+  
+  bufferRaster <- terra::resample(bufferRaster, hydro_template, method = "near")
+  
+  dist_r <- terra::distance(hydro_template, streams)
+  
+  riparian_fraction <- terra::ifel(
+    dist_r <= bufferRaster,
+    1,
+    0
+  )
+  
+  return(riparian_fraction)
+}
+## This module does not create or download inputs.
+## All spatial dependencies are expected to be
+## supplied by EasternCanadaDataPrep or the user.
+.inputObjects <- function(sim) {
+  # Any code written here will be run during the simInit for the purpose of creating
+  # any objects required by this module and identified in the inputObjects element of defineModule.
+  # This is useful if there is something required before simulation to produce the module
+  # object dependencies, including such things as downloading default datasets, e.g.,
+  # downloadData("LCC2005", modulePath(sim)).
+  # Nothing should be created here that does not create a named object in inputObjects.
+  # Any other initiation procedures should be put in "init" eventType of the doEvent function.
+  # Note: the module developer can check if an object is 'suppliedElsewhere' to
+  # selectively skip unnecessary steps because the user has provided those inputObjects in the
+  # simInit call, or another module will supply or has supplied it. e.g.,
+  # if (!suppliedElsewhere('defaultColor', sim)) {
+  #   sim$map <- Cache(prepInputs, extractURL('map')) # download, extract, load file from url in sourceURL
+  # }
+
+  #cacheTags <- c(currentModule(sim), "function:.inputObjects") ## uncomment this if Cache is being used
+  dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
+  message(currentModule(sim), ": using dataPath '", dPath, "'.")
+
+  # ! ----- EDIT BELOW ----- ! #
+
+  # ! ----- STOP EDITING ----- ! #
+  return(invisible(sim))
+}
+## ------------------------------------------------------------------
+## Module philosophy:
+## EasternCanadaHydrology translates hydrological geometry
+## and jurisdictional policy into a continuous spatial signal,
+## without embedding management or landbase assumptions.
+## ------------------------------------------------------------------
+
+ggplotFn <- function(data, ...) {
+  ggplot2::ggplot(data, ggplot2::aes(TheSample)) +
+    ggplot2::geom_histogram(...)
+}
+
