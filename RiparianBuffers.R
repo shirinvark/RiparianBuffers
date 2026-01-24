@@ -86,7 +86,7 @@ No data download. No landbase decisions",
 ## computes proportional riparian influence.
 
 doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
-  
+  message(">>> NEW RiparianBuffers code LOADED <<<")
   switch(
     eventType,
     
@@ -132,7 +132,7 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
         
         policy <- data.frame(
           province_code = c("BC","AB","SK","MB","ON","QC","NB","NS","NL","PE"),
-          buffer_m      = rep(30, 10),
+          buffer_m = rep(300, 10),
           stringsAsFactors = FALSE
         )
       }
@@ -287,11 +287,30 @@ buildRiparianFraction <- function(
     0
   )
   
-  riparian_fraction <- terra::resample(
+  fact <- round(res(PlanningRaster)[1] / hydroRaster_m)
+  
+  if (fact < 1) {
+    stop("hydroRaster_m must be finer than PlanningRaster resolution.")
+  }
+  
+  riparian_fraction <- terra::aggregate(
     rip_hi,
-    PlanningRaster,
-    method = "average"
+    fact = fact,
+    fun  = mean,
+    na.rm = TRUE
   )
+  
+  riparian_fraction <- terra::resample(
+    riparian_fraction,
+    PlanningRaster,
+    method = "near"
+  )
+  
+  riparian_fraction[is.na(riparian_fraction)] <- 0
+  riparian_fraction <- pmin(pmax(riparian_fraction, 0), 1)
+  
+  return(riparian_fraction)
+  
   
   riparian_fraction[is.na(riparian_fraction)] <- 0
   riparian_fraction <- pmin(pmax(riparian_fraction, 0), 1)
