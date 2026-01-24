@@ -276,40 +276,29 @@ buildRiparianFraction <- function(
     return(riparian_fraction)
   }
   
-  # =========================================================
-  # CASE 2: VARIABLE BUFFER (برای آینده)
-  # =========================================================
-  ## This approach decouples policy decisions
-  ## from hydrological representation.
-  
+  #Case 2 =========================================================
   bufferRaster <- terra::resample(bufferRaster, hydro_template, method = "near")
   
-  # distance to streams at high resolution
   dist_r <- terra::distance(hydro_template, streams)
   
-  # high-resolution binary riparian mask
   rip_hi <- terra::ifel(
     dist_r <= bufferRaster,
     1,
     0
   )
   
-  # aggregate to PlanningRaster resolution -> FRACTION
-  fact <- round(res(PlanningRaster)[1] / hydroRaster_m)
-  
-  riparian_fraction <- terra::aggregate(
+  riparian_fraction <- terra::resample(
     rip_hi,
-    fact = fact,
-    fun  = mean,
-    na.rm = TRUE
+    PlanningRaster,
+    method = "average"
   )
   
-  # safety cleanup
   riparian_fraction[is.na(riparian_fraction)] <- 0
   riparian_fraction <- pmin(pmax(riparian_fraction, 0), 1)
   
   return(riparian_fraction)
-  )
+  
+  
 }
 ## This module does not create or download inputs.
 ## All spatial dependencies are expected to be
