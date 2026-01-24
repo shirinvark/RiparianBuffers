@@ -128,7 +128,8 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       policy <- P(sim)$riparianPolicy
       
       if (is.null(policy)) {
-        stop("riparianPolicy must be provided when using province-based buffers.")
+        message("riparianPolicy not supplied; using default conservative 30 m baseline.")
+        policy <- .defaultRiparianPolicy
       }
       ## Build a spatially-explicit buffer raster where
       ## each cell stores the riparian buffer distance (m)
