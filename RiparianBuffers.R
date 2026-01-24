@@ -86,7 +86,7 @@ No data download. No landbase decisions",
 ## computes proportional riparian influence.
 
 doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
-  message(">>> NEW RiparianBuffers code \ <<<")
+  message(">>> NEW RiparianBuffers code <<<")
   switch(
     eventType,
     
@@ -143,18 +143,16 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       ## This raster enables variable-width buffers
       ## without modifying hydrology geometry.
       
-      bufferRaster <- terra::rast(
-        ext(prov_r),
-        resolution = res(prov_r),
-        crs = crs(prov_r),
-        datatype = "FLT4S"
-      )
+      bufferRaster <- prov_r * NA_real_
       
       for (i in seq_len(nrow(policy))) {
         idx <- prov_r == policy$province_code[i]
         bufferRaster[idx] <- policy$buffer_m[i]
       }
-      
+      vals <- values(bufferRaster)
+      if (any(!is.na(vals))) {
+        stopifnot(is.numeric(vals[!is.na(vals)]))
+      }
       ## ----------------------------------
       ## 3) Compute riparian fraction
       ## ----------------------------------
@@ -238,6 +236,13 @@ buildRiparianFraction <- function(
   if (!terra::same.crs(streams, PlanningRaster)) {
     streams <- terra::project(streams, PlanningRaster)
   }
+  # high-resolution template (shared)
+  hydro_template <- terra::rast(PlanningRaster)
+  hydro_template <- terra::disagg(
+    hydro_template,
+    fact = ceiling(res(PlanningRaster)[1] / hydroRaster_m)
+  )
+  
   ## Internal high-resolution raster used to compute
   ## proportional riparian influence.
   ##
@@ -246,16 +251,7 @@ buildRiparianFraction <- function(
   ## Performance note:
   ## hydroRaster_m controls the trade-off between
   ## spatial accuracy and computational cost.
-  ## This is intentionally decoupled from PlanningRaster.
-  
-  # --- raster template ---
-  hydro_template <- terra::rast(PlanningRaster)
-  hydro_template <- terra::disagg(
-    hydro_template,
-    fact = ceiling(res(PlanningRaster)[1] / hydroRaster_m)
-  )
-  
-  
+  ## This is intentionally decoupled from PlanningRaster
   # =========================================================
   # CASE 1: UNIFORM BUFFER (رفتار فعلی – بدون تغییر)
   # =========================================================
@@ -280,11 +276,6 @@ buildRiparianFraction <- function(
   
   #Case 2 =========================================================
   # aligned high-resolution template
-  hydro_template <- terra::rast(PlanningRaster)
-  hydro_template <- terra::disagg(
-    hydro_template,
-    fact = ceiling(res(PlanningRaster)[1] / hydroRaster_m)
-  )
   
   bufferRaster <- terra::resample(bufferRaster, hydro_template, method = "near")
   
