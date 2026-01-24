@@ -345,6 +345,7 @@ buildRiparianFraction <- function(
   )
   
   return(riparian_fraction)
+}
   
 ## This module does not create or download inputs.
 ## All spatial dependencies are expected to be
