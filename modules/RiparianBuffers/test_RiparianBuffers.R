@@ -24,6 +24,7 @@ setPaths(
   cachePath   = file.path(root, "cache"),
   scratchPath = file.path(root, "scratch")
 )
+getPaths()
 
 ## -----------------------------------------------------
 ## DOWNLOAD MODULE
@@ -81,21 +82,30 @@ Hydrology <- list(
 ## -----------------------------------------------------
 ## DUMMY PROVINCES
 ## -----------------------------------------------------
-Provinces <- vect(
-  data.frame(
-    province_code = "ON",
-    geometry = st_as_sfc(st_bbox(studyArea))
-  ),
+Provinces_sf <- st_as_sf(
+  data.frame(province_code = "ON"),
+  geometry = st_as_sfc(st_bbox(studyArea)),
   crs = 3857
 )
+Provinces <- terra::vect(Provinces_sf)
+class(Provinces)
+# باید ببینی: "SpatVector"
 
+plot(Provinces)
+
+ext(Provinces)
+ext(PlanningRaster)
+plot(PlanningRaster, main = "PlanningRaster")
+plot(Provinces, add = TRUE, border = "red", lwd = 2)
+ط
 ## -----------------------------------------------------
 ## RIPARIAN POLICY (DUMMY BUT REQUIRED)
 ## -----------------------------------------------------
 riparianPolicy <- data.frame(
   province_code = "ON",
-  buffer_m = 30
+  buffer_m = 150   # به‌جای 30
 )
+
 
 ## -----------------------------------------------------
 ## RUN MODULE

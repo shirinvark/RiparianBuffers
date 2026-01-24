@@ -80,6 +80,19 @@ No data download. No landbase decisions",
     )
   )
 ))
+## -------------------------------------------------
+## Default conservative riparian policy (fallback)
+## -------------------------------------------------
+## Used only if user does not supply riparianPolicy
+## Represents a widely adopted baseline (30 m)
+## consistent with aquatic protection guidelines
+## -------------------------------------------------
+
+.defaultRiparianPolicy <- data.frame(
+  province_code = c("BC","AB","SK","MB","ON","QC","NB","NS","NL","PE"),
+  buffer_m      = rep(30, 10)
+)
+
 ## Main event for RiparianBuffers.
 ## Translates jurisdiction-specific riparian policy
 ## into a spatially explicit buffer raster, then
@@ -128,8 +141,10 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       policy <- P(sim)$riparianPolicy
       
       if (is.null(policy)) {
-        stop("riparianPolicy must be provided when using province-based buffers.")
+        message("riparianPolicy not supplied; using default conservative 30 m baseline.")
+        policy <- .defaultRiparianPolicy
       }
+      
       ## Build a spatially-explicit buffer raster where
       ## each cell stores the riparian buffer distance (m)
       ## defined by its province-specific policy.
@@ -142,6 +157,14 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       for (i in seq_len(nrow(policy))) {
         idx <- prov_r == policy$province_code[i]
         bufferRaster[idx] <- policy$buffer_m[i]
+      }
+      ## sanity check: ensure all cells received a buffer value
+      if (any(is.na(bufferRaster))) {
+        warning(
+          "Some planning cells did not receive a riparian buffer. ",
+          "Check that all province_code values in `Provinces` ",
+          "are represented in `riparianPolicy`."
+        )
       }
       
       ## ----------------------------------
@@ -162,6 +185,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
         bufferRaster   = bufferRaster,
         hydroRaster_m  = P(sim)$hydroRaster_m
       )
+      
       
       ## ----------------------------------
       ## 4) Save output
