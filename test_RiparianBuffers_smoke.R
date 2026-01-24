@@ -5,6 +5,11 @@
 ##  - Trigger warning when a province_code is missing in policy
 ##  - Verify fractional (0–1) riparian output
 ############################################################
+.rs.restartR()
+
+unlink("E:/RiparianBuffers/cache", recursive = TRUE, force = TRUE)
+unlink("E:/RiparianBuffers/scratch", recursive = TRUE, force = TRUE)
+gc()
 
 rm(list = ls())
 gc()
@@ -17,7 +22,7 @@ library(sf)
 ## ---------------------------------------------------------
 ## 1. Paths
 ## ---------------------------------------------------------
-root <- "E:/RiparianBuffers_test"
+root <- "E:/RiparianBuffers"
 
 dir.create(file.path(root, "modules"),  recursive = TRUE, showWarnings = FALSE)
 dir.create(file.path(root, "inputs"),   recursive = TRUE, showWarnings = FALSE)
@@ -36,11 +41,15 @@ setPaths(
 ## ---------------------------------------------------------
 ## 2. Download RiparianBuffers module
 ## ---------------------------------------------------------
-getModule(
-  "shirinvark/RiparianBuffers",
-  modulePath = getPaths()$modulePath,
-  overwrite  = TRUE
-)
+## ---------------------------------------------------------
+## 2. Download RiparianBuffers module
+## ---------------------------------------------------------
+#getModule(
+  #"shirinvark/RiparianBuffers",
+ # modulePath = getPaths()$modulePath,
+ # overwrite  = FALSE   # ❗❗ خیلی مهم
+#)
+
 
 ## ---------------------------------------------------------
 ## 3. Dummy study area and planning raster (250 m)
@@ -104,6 +113,7 @@ Hydrology <- list(streams = streams)
 ## 6. Initialize and run RiparianBuffers
 ##    (no riparianPolicy provided -> fallback should be used)
 ## ---------------------------------------------------------
+
 sim <- simInit(
   times   = list(start = 0, end = 1),
   modules = "RiparianBuffers",
@@ -118,6 +128,7 @@ sim <- simInit(
     )
   )
 )
+getAnywhere(doEvent.RiparianBuffers)
 
 ## EXPECTED:
 ## - Warning about missing province_code (XX)

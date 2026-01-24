@@ -129,16 +129,24 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       
       if (is.null(policy)) {
         message("riparianPolicy not supplied; using default conservative 30 m baseline.")
-        policy <- .defaultRiparianPolicy
+        
+        policy <- data.frame(
+          province_code = c("BC","AB","SK","MB","ON","QC","NB","NS","NL","PE"),
+          buffer_m      = rep(30, 10),
+          stringsAsFactors = FALSE
+        )
       }
+      
       ## Build a spatially-explicit buffer raster where
       ## each cell stores the riparian buffer distance (m)
       ## defined by its province-specific policy.
       ## This raster enables variable-width buffers
       ## without modifying hydrology geometry.
       
-      bufferRaster <- prov_r
-      terra::values(bufferRaster) <- NA
+      bufferRaster <- terra::rast(prov_r)
+      terra::values(bufferRaster) <- NA_real_
+      
+      
       
       for (i in seq_len(nrow(policy))) {
         idx <- prov_r == policy$province_code[i]
