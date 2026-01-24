@@ -44,11 +44,11 @@ setPaths(
 ## ---------------------------------------------------------
 ## 2. Download RiparianBuffers module
 ## ---------------------------------------------------------
-#getModule(
-  #"shirinvark/RiparianBuffers",
- # modulePath = getPaths()$modulePath,
- # overwrite  = FALSE   # ❗❗ خیلی مهم
-#)
+getModule(
+  "shirinvark/RiparianBuffers",
+ modulePath = getPaths()$modulePath,
+ overwrite  = FALSE   # ❗❗ خیلی مهم
+)
 
 
 ## ---------------------------------------------------------
