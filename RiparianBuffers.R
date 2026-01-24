@@ -143,10 +143,12 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       ## This raster enables variable-width buffers
       ## without modifying hydrology geometry.
       
-      bufferRaster <- terra::rast(prov_r)
-      terra::values(bufferRaster) <- NA_real_
-      
-      
+      bufferRaster <- terra::rast(
+        ext(prov_r),
+        resolution = res(prov_r),
+        crs = crs(prov_r),
+        datatype = "FLT4S"
+      )
       
       for (i in seq_len(nrow(policy))) {
         idx <- prov_r == policy$province_code[i]
