@@ -3,11 +3,13 @@ gc()
 
 library(SpaDES.core)
 library(SpaDES.project)
+library(terra)
+library(sf)
 
 ## -----------------------------------------------------
 ## PATHS
 ## -----------------------------------------------------
-root <- "E:/EasternCanadaProject"
+root <- "E:/RiparianBuffers_test"
 
 dir.create(file.path(root, "modules"),  recursive = TRUE, showWarnings = FALSE)
 dir.create(file.path(root, "inputs"),   recursive = TRUE, showWarnings = FALSE)
@@ -23,22 +25,15 @@ setPaths(
   scratchPath = file.path(root, "scratch")
 )
 
-getPaths()
-
 ## -----------------------------------------------------
-## DOWNLOAD MODULE  ✅ (THIS IS THE FIX)
+## DOWNLOAD MODULE
 ## -----------------------------------------------------
 getModule(
-  "shirinvark/EasternCanadaHydrology",
+  "shirinvark/RiparianBuffers",
   modulePath = getPaths()$modulePath,
   overwrite  = TRUE
 )
 
-## sanity check
-list.files(getPaths()$modulePath)
-library(SpaDES.core)
-library(terra)
-library(sf)
 
 ## -----------------------------------------------------
 ## DUMMY STUDY AREA
@@ -46,7 +41,11 @@ library(sf)
 studyArea <- st_as_sf(
   st_sfc(
     st_polygon(list(matrix(
-      c(0,0, 1000,0, 1000,1000, 0,1000, 0,0),
+      c(0, 0,
+        1000, 0,
+        1000, 1000,
+        0, 1000,
+        0, 0),
       ncol = 2, byrow = TRUE
     )))
   ),
@@ -60,7 +59,7 @@ PlanningRaster <- rast(vect(studyArea), resolution = 250)
 values(PlanningRaster) <- 1
 
 ## -----------------------------------------------------
-## DUMMY STREAM
+## DUMMY STREAM (SpatVector)
 ## -----------------------------------------------------
 streams <- vect(
   st_as_sf(
@@ -80,19 +79,39 @@ Hydrology <- list(
 )
 
 ## -----------------------------------------------------
+## DUMMY PROVINCES
+## -----------------------------------------------------
+Provinces <- vect(
+  data.frame(
+    province_code = "ON",
+    geometry = st_as_sfc(st_bbox(studyArea))
+  ),
+  crs = 3857
+)
+
+## -----------------------------------------------------
+## RIPARIAN POLICY (DUMMY BUT REQUIRED)
+## -----------------------------------------------------
+riparianPolicy <- data.frame(
+  province_code = "ON",
+  buffer_m = 30
+)
+
+## -----------------------------------------------------
 ## RUN MODULE
 ## -----------------------------------------------------
 sim <- simInit(
   times   = list(start = 0, end = 1),
-  modules = "EasternCanadaHydrology",
+  modules = "RiparianBuffers",
   objects = list(
     PlanningRaster = PlanningRaster,
-    Hydrology      = Hydrology
+    Hydrology      = Hydrology,
+    Provinces      = Provinces
   ),
   params = list(
-    EasternCanadaHydrology = list(
-      riparianBuffer_m = 30,
-      hydroRaster_m    = 100
+    RiparianBuffers = list(
+      riparianPolicy = riparianPolicy,
+      hydroRaster_m  = 100
     )
   )
 )
@@ -100,9 +119,14 @@ sim <- simInit(
 sim <- spades(sim)
 
 ## -----------------------------------------------------
-## CHECK
+## CHECK OUTPUT
 ## -----------------------------------------------------
 names(sim)
 names(sim$Riparian)
 
-plot(sim$Riparian$riparianFraction, main = "Riparian fraction")
+summary(terra::values(sim$Riparian$riparianFraction))
+
+plot(
+  sim$Riparian$riparianFraction,
+  main = "Riparian fraction (0–1)"
+)

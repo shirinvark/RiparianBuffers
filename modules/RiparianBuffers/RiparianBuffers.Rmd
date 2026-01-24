@@ -1,6 +1,6 @@
 ---
-title: "EasternCanadaHydrology Manual"
-subtitle: "v.`r SpaDES.core::moduleMetadata(module = 'EasternCanadaHydrology', path = '..')$version`"
+title: "RiparianBuffers Manual"
+subtitle: "v.`r SpaDES.core::moduleMetadata(module = 'RiparianBuffers', path = '..')$version`"
 date: "Last updated: `r Sys.Date()`"
 output:
   bookdown::html_document2:

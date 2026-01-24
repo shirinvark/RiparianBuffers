@@ -5,17 +5,17 @@
 ## they are namespaced to the module, just like functions in R packages.
 ## If exact location is required, functions will be: `sim$.mods$<moduleName>$FunctionName`.
 defineModule(sim, list(
-  name = "EasternCanadaHydrology",
+  name = "RiparianBuffers",
   description = "Computes raster-based riparian influence (fractional) from upstream hydrology inputs.
 No data download. No landbase decisions",
   keywords = c("hydrology", "riparian", "buffer"),
   authors = structure(list(list(given = c("First", "Middle"), family = "Last", role = c("aut", "cre"), email = "email@example.com", comment = NULL)), class = "person"),
   childModules = character(0),
-  version = list(EasternCanadaHydrology = "0.0.0.9000"),
+  version = list(RiparianBuffers = "0.0.0.9000"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
-  documentation = list("NEWS.md", "README.md", "EasternCanadaHydrology.Rmd"),
+  documentation = list("NEWS.md", "README.md", "RiparianBuffers.Rmd"),
   reqdPkgs = list(
     "PredictiveEcology/SpaDES.core@development (>= 2.1.8.9001)",
     "terra"
@@ -57,7 +57,7 @@ No data download. No landbase decisions",
       desc        = "Coarse-resolution planning raster supplied by upstream module",
       sourceURL  = NA
     ),
-    ## Provinces are supplied by EasternCanadaDataPrep
+    ## Provinces are supplied by RiparianBuffers
     ## and are used ONLY to spatially apply province-specific
     ## riparian buffer policies (no landbase decisions here).
     expectsInput(
@@ -80,12 +80,12 @@ No data download. No landbase decisions",
     )
   )
 ))
-## Main event for EasternCanadaHydrology.
+## Main event for RiparianBuffers.
 ## Translates jurisdiction-specific riparian policy
 ## into a spatially explicit buffer raster, then
 ## computes proportional riparian influence.
 
-doEvent.EasternCanadaHydrology <- function(sim, eventTime, eventType) {
+doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   
   switch(
     eventType,
@@ -207,7 +207,7 @@ buildRiparianFraction <- function(
   
   # --- sanity check ---
   if (is.null(streams)) {
-    stop("Hydrology$streams is missing. Run EasternCanadaDataPrep before EasternCanadaHydrology.")
+    stop("Hydrology$streams is missing. Run EasternCanadaDataPrep before RiparianBuffers.")
   }
   
   if (!inherits(streams, "SpatVector")) {
@@ -256,11 +256,34 @@ buildRiparianFraction <- function(
     
     streams_buf <- terra::buffer(streams, width = riparianBuffer_m)
     
-    riparian_fraction <- terra::rasterize(
+    riparian_hr <- terra::rasterize(
       streams_buf,
       hydro_template,
       cover = TRUE,
       background = 0
+    )
+    
+    # -------------------------------------------------
+    # Aggregate high-resolution riparian signal
+    # to PlanningRaster to obtain fractional coverage
+    # -------------------------------------------------
+    
+    agg_fact <- round(
+      terra::res(PlanningRaster)[1] / terra::res(hydro_template)[1]
+    )
+    
+    riparian_fraction <- terra::aggregate(
+      riparian_hr,
+      fact = agg_fact,
+      fun = mean,
+      na.rm = TRUE
+    )
+    
+    # Align exactly to PlanningRaster grid
+    riparian_fraction <- terra::resample(
+      riparian_fraction,
+      PlanningRaster,
+      method = "near"
     )
     
     return(riparian_fraction)
@@ -276,14 +299,29 @@ buildRiparianFraction <- function(
   
   dist_r <- terra::distance(hydro_template, streams)
   
-  riparian_fraction <- terra::ifel(
+  riparian_hr <- terra::ifel(
     dist_r <= bufferRaster,
     1,
     0
   )
   
+  agg_fact <- round(terra::res(PlanningRaster)[1] / hydroRaster_m)
+  
+  riparian_fraction <- terra::aggregate(
+    riparian_hr,
+    fact = agg_fact,
+    fun = mean,
+    na.rm = TRUE
+  )
+  
+  riparian_fraction <- terra::resample(
+    riparian_fraction,
+    PlanningRaster,
+    method = "near"
+  )
+  
   return(riparian_fraction)
-}
+  
 ## This module does not create or download inputs.
 ## All spatial dependencies are expected to be
 ## supplied by EasternCanadaDataPrep or the user.
@@ -313,7 +351,7 @@ buildRiparianFraction <- function(
 }
 ## ------------------------------------------------------------------
 ## Module philosophy:
-## EasternCanadaHydrology translates hydrological geometry
+## RiparianBuffers translates hydrological geometry
 ## and jurisdictional policy into a continuous spatial signal,
 ## without embedding management or landbase assumptions.
 ## ------------------------------------------------------------------
