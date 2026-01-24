@@ -86,7 +86,7 @@ No data download. No landbase decisions",
 ## computes proportional riparian influence.
 
 doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
-  message(">>> NEW RiparianBuffers code LOADED <<<")
+  message(">>> NEW RiparianBuffers code \ <<<")
   switch(
     eventType,
     
@@ -247,12 +247,12 @@ buildRiparianFraction <- function(
   ## This is intentionally decoupled from PlanningRaster.
   
   # --- raster template ---
-  hydro_template <- terra::rast(
-    terra::ext(PlanningRaster),
-    resolution = hydroRaster_m,
-    crs = terra::crs(PlanningRaster)
+  hydro_template <- terra::rast(PlanningRaster)
+  hydro_template <- terra::disagg(
+    hydro_template,
+    fact = ceiling(res(PlanningRaster)[1] / hydroRaster_m)
   )
-  terra::values(hydro_template) <- 0
+  
   
   # =========================================================
   # CASE 1: UNIFORM BUFFER (رفتار فعلی – بدون تغییر)
@@ -277,6 +277,13 @@ buildRiparianFraction <- function(
   }
   
   #Case 2 =========================================================
+  # aligned high-resolution template
+  hydro_template <- terra::rast(PlanningRaster)
+  hydro_template <- terra::disagg(
+    hydro_template,
+    fact = ceiling(res(PlanningRaster)[1] / hydroRaster_m)
+  )
+  
   bufferRaster <- terra::resample(bufferRaster, hydro_template, method = "near")
   
   dist_r <- terra::distance(hydro_template, streams)
@@ -287,11 +294,7 @@ buildRiparianFraction <- function(
     0
   )
   
-  fact <- round(res(PlanningRaster)[1] / hydroRaster_m)
-  
-  if (fact < 1) {
-    stop("hydroRaster_m must be finer than PlanningRaster resolution.")
-  }
+  fact <- ceiling(res(PlanningRaster)[1] / hydroRaster_m)
   
   riparian_fraction <- terra::aggregate(
     rip_hi,
@@ -310,14 +313,6 @@ buildRiparianFraction <- function(
   riparian_fraction <- pmin(pmax(riparian_fraction, 0), 1)
   
   return(riparian_fraction)
-  
-  
-  riparian_fraction[is.na(riparian_fraction)] <- 0
-  riparian_fraction <- pmin(pmax(riparian_fraction, 0), 1)
-  
-  return(riparian_fraction)
-  
-  
 }
 ## This module does not create or download inputs.
 ## All spatial dependencies are expected to be
