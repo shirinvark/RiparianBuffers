@@ -85,20 +85,6 @@ No data download. No landbase decisions",
   )
   
 ))
-checkRaster <- function(r, name) {
-  message("---- Checking ", name, " ----")
-  print(r)
-  v <- terra::values(r, mat = FALSE)
-  message("  NA fraction: ", mean(is.na(v)))
-  message("  Non-NA count: ", sum(!is.na(v)))
-}
-
-plotIfAllNA <- function(r, name) {
-  if (all(is.na(terra::values(r)))) {
-    message("⚠️ ", name, " is ALL NA — plotting")
-    plot(r, main = paste(name, "(ALL NA)"))
-  }
-}
 
 ## Main event for RiparianBuffers.
 ## Translates jurisdiction-specific riparian policy
@@ -137,9 +123,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
         crs = terra::crs(sim$PlanningRaster)
       )
       terra::values(hydro_template) <- NA_real_
-      checkRaster(hydro_template, "hydro_template")
-      #plotIfAllNA(hydro_template, "hydro_template")
-      
+
       ## 3) Province → buffer raster (NUMERIC, SAFE)
       
       ## 3) Province → buffer raster (NUMERIC, SAFE)
@@ -156,15 +140,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
         hydro_template,
         field = "buffer_m"
       )
-      checkRaster(bufferRaster, "bufferRaster")
-      plotIfAllNA(bufferRaster, "bufferRaster")
       
-      ## --- CHECK bufferRaster ---
-      stopifnot(inherits(bufferRaster, "SpatRaster"))
-      stopifnot(is.numeric(terra::values(bufferRaster, mat = FALSE)))
-      stopifnot(any(!is.na(terra::values(bufferRaster))))
-      
-
       
       ## 4) Riparian fraction
       rip_frac <- buildRiparianFraction(
@@ -280,8 +256,6 @@ buildRiparianFraction <- function(
   ## ---- FIX terra::ifel NA bug ----
 
   dist_r <- terra::distance(hydro_template, streams)
-  checkRaster(dist_r, "dist_r")
-  plotIfAllNA(dist_r, "dist_r")
   
   ## --- CHECK alignment ---
   stopifnot(
@@ -298,9 +272,6 @@ buildRiparianFraction <- function(
   
   # logical → numeric {0,1}
   rip_hi <- cond * 1
-  checkRaster(rip_hi, "rip_hi (binary mask)")
-  plotIfAllNA(rip_hi, "rip_hi")
-  
   
   fact <- round(res(PlanningRaster)[1] / hydroRaster_m)
   fact <- max(1, fact)
@@ -311,9 +282,6 @@ buildRiparianFraction <- function(
     fun  = "mean",
     na.rm = TRUE
   )
-  
-  checkRaster(riparian_fraction, "riparian_fraction (aggregated)")
-  plotIfAllNA(riparian_fraction, "riparian_fraction")
   
   riparian_fraction <- terra::resample(
     riparian_fraction,
@@ -364,8 +332,4 @@ buildRiparianFraction <- function(
 ## without embedding management or landbase assumptions.
 ## ------------------------------------------------------------------
 
-ggplotFn <- function(data, ...) {
-  ggplot2::ggplot(data, ggplot2::aes(TheSample)) +
-    ggplot2::geom_histogram(...)
-}
 
