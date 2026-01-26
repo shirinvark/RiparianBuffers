@@ -108,7 +108,24 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       }
       
       ## ----------------------------------
-      ## 2) Build hydro template (single source of truth)
+      ## 2) Create numeric province IDs
+      ## ----------------------------------
+      prov_levels <- unique(policy$province_code)
+      
+      prov_id_lut <- data.frame(
+        province_code = prov_levels,
+        prov_id = seq_along(prov_levels)
+      )
+      
+      # attach numeric ID to Provinces vector
+      sim$Provinces$prov_id <- prov_id_lut$prov_id[
+        match(sim$Provinces$province_code, prov_id_lut$province_code)
+      ]
+      
+      stopifnot(!any(is.na(sim$Provinces$prov_id)))
+      
+      ## ----------------------------------
+      ## 3) Hydro template (single source of truth)
       ## ----------------------------------
       hydro_template <- terra::rast(
         ext = terra::ext(sim$PlanningRaster),
@@ -118,50 +135,28 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       terra::values(hydro_template) <- NA_real_
       
       ## ----------------------------------
-      ## 3) Rasterize provinces directly on hydro grid
+      ## 4) Rasterize numeric province ID
       ## ----------------------------------
-      # rasterize province_code as factor
       prov_r <- terra::rasterize(
         sim$Provinces,
         hydro_template,
-        field = "province_code"
+        field = "prov_id"
       )
       
-      prov_r <- terra::as.factor(prov_r)
-      
-      # build lookup table
-      lut <- data.frame(
-        from = policy$province_code,
-        to   = policy$buffer_m,
-        stringsAsFactors = FALSE
+      ## ----------------------------------
+      ## 5) Province ID → buffer distance
+      ## ----------------------------------
+      buffer_lut <- data.frame(
+        from = prov_id_lut$prov_id,
+        to   = policy$buffer_m
       )
       
-      # reclassify province raster → buffer distance raster
       bufferRaster <- terra::classify(
         prov_r,
-        lut,
+        buffer_lut,
         others = NA_real_
       )
       
-      
-      ## ----------------------------------
-      ## 4) Compute riparian fraction
-      ## ----------------------------------
-      rip_frac <- buildRiparianFraction(
-        PlanningRaster = sim$PlanningRaster,
-        streams        = sim$Hydrology$streams,
-        bufferRaster   = bufferRaster,
-        hydroRaster_m  = P(sim)$hydroRaster_m
-      )
-      
-      ## ----------------------------------
-      ## 5) Save output
-      ## ----------------------------------
-      sim$Riparian <- list(
-        riparianFraction = rip_frac,
-        raster_m         = P(sim)$hydroRaster_m,
-        policy           = policy
-      )
     }
   )
   
