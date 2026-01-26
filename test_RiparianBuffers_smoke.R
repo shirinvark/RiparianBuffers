@@ -1,15 +1,8 @@
 ############################################################
-## Smoke test for RiparianBuffers module
-## Purpose:
-##  - Test fallback riparian policy (30 m)
-##  - Trigger warning when a province_code is missing in policy
-##  - Verify fractional (0–1) riparian output
+## Smoke test for RiparianBuffers module (FINAL)
 ############################################################
-.rs.restartR()
 
-unlink("E:/RiparianBuffers/cache", recursive = TRUE, force = TRUE)
-unlink("E:/RiparianBuffers/scratch", recursive = TRUE, force = TRUE)
-gc()
+.rs.restartR()
 
 rm(list = ls())
 gc()
@@ -39,118 +32,118 @@ setPaths(
 )
 
 ## ---------------------------------------------------------
-## 2. Download RiparianBuffers module
-## ---------------------------------------------------------
-## ---------------------------------------------------------
-## 2. Download RiparianBuffers module
+## 2. Get module
 ## ---------------------------------------------------------
 getModule(
   "shirinvark/RiparianBuffers",
- modulePath = getPaths()$modulePath,
- overwrite  = FALSE   # ❗❗ خیلی مهم
-)
-
-
-## ---------------------------------------------------------
-## 3. Dummy study area and planning raster (250 m)
-## ---------------------------------------------------------
-studyArea <- st_as_sf(
-  st_sfc(
-    st_polygon(list(matrix(
-      c(0,0, 1000,0, 1000,1000, 0,1000, 0,0),
-      ncol = 2, byrow = TRUE
-    )))
-  ),
-  crs = 3857
-)
-
-PlanningRaster <- rast(vect(studyArea), resolution = 250)
-values(PlanningRaster) <- 1
-
-## ---------------------------------------------------------
-## 4. Provinces (one intentionally missing from policy)
-## ---------------------------------------------------------
-## ON has a policy, XX does not -> should trigger warning
-Provinces <- vect(
-  st_as_sf(
-    data.frame(
-      province_code = c("ON", "XX"),
-      id = 1:2
-    ),
-    geometry = st_sfc(
-      st_polygon(list(matrix(
-        c(0,0, 500,0, 500,1000, 0,1000, 0,0),
-        ncol = 2, byrow = TRUE
-      ))),
-      st_polygon(list(matrix(
-        c(500,0, 1000,0, 1000,1000, 500,1000, 500,0),
-        ncol = 2, byrow = TRUE
-      )))
-    ),
-    crs = 3857
-  )
+  modulePath = getPaths()$modulePath,
+  overwrite  = TRUE
 )
 
 ## ---------------------------------------------------------
-## 5. Dummy hydrology (single vertical stream)
+## 3. Load HydroRIVERS (REAL data)
 ## ---------------------------------------------------------
-streams <- vect(
-  st_as_sf(
-    st_sfc(
-      st_linestring(matrix(
-        c(500, 0,
-          500, 1000),
-        ncol = 2, byrow = TRUE
-      ))
-    ),
-    crs = 3857
-  )
+zip_path  <- "D:/HydroRIVERS_v10_na_shp (3).zip"
+hydro_dir <- "D:/HydroRIVERS"
+
+if (!dir.exists(hydro_dir)) {
+  unzip(zip_path, exdir = hydro_dir)
+}
+
+hydro_shp <- file.path(
+  hydro_dir,
+  "HydroRIVERS_v10_na_shp",
+  "HydroRIVERS_v10_na.shp"
 )
 
-Hydrology <- list(streams = streams)
+streams_all <- terra::vect(hydro_shp)
+streams_all <- terra::project(streams_all, "EPSG:3857")
+
+stopifnot(nrow(streams_all) > 0)
 
 ## ---------------------------------------------------------
-## 6. Initialize and run RiparianBuffers
-##    (no riparianPolicy provided -> fallback should be used)
+## 4. Small study area (from first rivers)
 ## ---------------------------------------------------------
+studyArea <- terra::ext(streams_all[1:50, ]) |>
+  terra::as.polygons(crs = "EPSG:3857") |>
+  sf::st_as_sf()
 
+## ---------------------------------------------------------
+## 5. Planning raster (coarse)
+## ---------------------------------------------------------
+PlanningRaster <- terra::rast(
+  terra::vect(studyArea),
+  resolution = 250,
+  crs = "EPSG:3857"
+)
+terra::values(PlanningRaster) <- 1
+
+## ---------------------------------------------------------
+## 6. Provinces (dummy but valid)
+## ---------------------------------------------------------
+Provinces <- terra::vect(studyArea)
+Provinces$province_code <- "ON"
+
+## ---------------------------------------------------------
+## 7. Streams (cropped)
+## ---------------------------------------------------------
+streams <- terra::crop(streams_all, terra::vect(studyArea))
+stopifnot(nrow(streams) > 0)
+
+## ---------------------------------------------------------
+## 8. simInit
+## ---------------------------------------------------------
 sim <- simInit(
   times   = list(start = 0, end = 1),
   modules = "RiparianBuffers",
   objects = list(
-    PlanningRaster = PlanningRaster,
-    Provinces      = Provinces,
-    Hydrology      = Hydrology
+    PlanningRaster    = PlanningRaster,
+    Provinces         = Provinces,
+    Hydrology_streams = streams
   ),
   params = list(
     RiparianBuffers = list(
       hydroRaster_m = 100
     )
+  ),
+  options = list(
+    spades.checkpoint = FALSE,
+    spades.progress   = FALSE,
+    spades.save       = FALSE
   )
 )
-getAnywhere(doEvent.RiparianBuffers)
 
-## EXPECTED:
-## - Warning about missing province_code (XX)
-## - Default 30 m buffer applied elsewhere
+ls(sim)
+
+## ---------------------------------------------------------
+## 9. Run
+## ---------------------------------------------------------
 sim <- spades(sim)
 
 ## ---------------------------------------------------------
-## 7. Check outputs
+## 10. Checks
 ## ---------------------------------------------------------
-names(sim$Riparian)
-# Expected:
-# "riparianFraction" "raster_m" "policy"
+stopifnot(inherits(sim$RiparianFraction, "SpatRaster"))
+stopifnot(is.list(sim$RiparianMeta))
 
-summary(values(sim$Riparian$riparianFraction))
-# Expected:
-# Values between 0 and 1 (fractional)
+summary(terra::values(sim$RiparianFraction))
 
 plot(
-  sim$Riparian$riparianFraction,
-  main = "Riparian fraction (fallback policy, 30 m)"
+  sim$RiparianFraction,
+  main = "Riparian Fraction (Smoke Test)"
 )
 
-############################################################
-## END OF TEST
+terra::global(
+  sim$RiparianFraction,
+  mean,
+  na.rm = TRUE
+)
+
+hist(
+  terra::values(sim$RiparianFraction),
+  main = "Riparian fraction distribution",
+  xlab = "fraction"
+)
+
+message("✅ RiparianBuffers smoke test PASSED")
 ############################################################

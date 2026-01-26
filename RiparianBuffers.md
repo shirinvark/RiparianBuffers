@@ -1,7 +1,7 @@
 ---
 title: "RiparianBuffers Manual"
-subtitle: "v.`r SpaDES.core::moduleMetadata(module = 'RiparianBuffers', path = '..')$version`"
-date: "Last updated: `r Sys.Date()`"
+subtitle: "v.0.0.0.9000"
+date: "Last updated: 2026-01-26"
 output:
   bookdown::html_document2:
     toc: true
@@ -55,8 +55,35 @@ which can be interpreted differently depending on downstream use cases.
 
 ---
 
-## Future directions
+## RiparianBuffers – workflow (simplified)
 
-- Integration with landbase accounting modules
-- Scenario-based riparian policy testing
-- Evaluation of ecological versus regulatory buffer widths
+PlanningRaster (SpatRaster)
+        |
+        v
+Hydrology_streams (SpatVector)
+        |
+        v
+[Validate inputs & CRS]
+        |
+        v
+[Resolve riparian policy]
+  (default OR province-based)
+        |
+        v
+[Create high-resolution hydrology template]
+  (resolution = hydroRaster_m)
+        |
+        v
+[Rasterize province buffer widths]
+        |
+        v
+[Distance-to-stream raster]
+        |
+        v
+[Binary riparian mask (distance ≤ buffer)]
+        |
+        v
+[Aggregate to planning resolution]
+        |
+        v
+RiparianFraction (fractional raster)

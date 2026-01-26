@@ -175,8 +175,8 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
 buildRiparianFraction <- function(
     PlanningRaster,
     streams,
-    riparianBuffer_m = NULL,   # buffer ثابت (اختیاری)
-    bufferRaster     = NULL,   # buffer متغیر (اختیاری)
+    riparianBuffer_m = NULL,   # buffer  
+    bufferRaster     = NULL,   # buffer 
     hydroRaster_m    = 100
 ) {
   ## Enforce a single buffering strategy:
@@ -225,7 +225,7 @@ buildRiparianFraction <- function(
   ## spatial accuracy and computational cost.
   ## This is intentionally decoupled from PlanningRaster
   # =========================================================
-  # CASE 1: UNIFORM BUFFER (رفتار فعلی – بدون تغییر)
+  # CASE 1: UNIFORM BUFFER 
   # =========================================================
   ## Uniform buffer case:
   ## applies a single buffer distance to all streams.
