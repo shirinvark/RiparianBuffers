@@ -52,3 +52,35 @@ All interpretation of riparian influence is deferred to downstream modules.
 
 This module is under active development.
 Design choices are being refined in coordination with upstream and downstream modules.
+
+
+## RiparianBuffers – Conceptual Workflow
+
+```mermaid
+flowchart TD
+
+A[Upstream Data Preparation<br/>(outside this module)]
+
+A --> B1[PlanningRaster<br/>SpatRaster<br/>~250 m<br/>Source: EasternCanadaDataPrep]
+A --> B2[Hydrology_streams<br/>SpatVector<br/>Source: HydroRIVERS / National Hydrography]
+A --> B3[Provinces<br/>SpatVector<br/>province_code<br/>Source: Provincial boundaries]
+
+B1 --> C
+B2 --> C
+B3 --> C
+
+C[RiparianBuffers Module]
+
+C --> D1[1. Validate inputs<br/>(class + CRS)]
+D1 --> D2[2. Resolve riparian policy<br/>User-supplied OR default buffer]
+D2 --> D3[3. Build high-resolution hydrology template<br/>(hydroRaster_m)]
+D3 --> D4[4. Rasterize province-based buffer distances]
+D4 --> D5[5. Compute distance-to-stream raster]
+D5 --> D6[6. Binary riparian mask<br/>(distance ≤ buffer)]
+D6 --> D7[7. Aggregate to planning resolution]
+
+D7 --> E[Outputs]
+
+E --> O1[RiparianFraction<br/>SpatRaster<br/>Values 0–1]
+E --> O2[RiparianMeta<br/>Policy + resolution]
+
