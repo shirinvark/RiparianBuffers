@@ -93,6 +93,11 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
     eventType,
     
     init = {
+      ## --- CHECK inputs ---
+      stopifnot(inherits(sim$PlanningRaster, "SpatRaster"))
+      stopifnot(inherits(sim$Provinces, "SpatVector"))
+      stopifnot(is.list(sim$Hydrology))
+      stopifnot(inherits(sim$Hydrology$streams, "SpatVector"))
       
       ## 1) Riparian policy
       policy <- P(sim)$riparianPolicy
@@ -130,6 +135,10 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
         field = "buffer_m"
       )
       
+      ## --- CHECK bufferRaster ---
+      stopifnot(inherits(bufferRaster, "SpatRaster"))
+      stopifnot(is.numeric(terra::values(bufferRaster, mat = FALSE)))
+      stopifnot(any(!is.na(terra::values(bufferRaster))))
       
 
       
@@ -148,9 +157,10 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
         policy           = policy
       )
       
-      return(sim)   # ⬅⬅⬅ این خط حیاتی بود
     }
   )
+  
+  invisible(sim)
 }
 
 
@@ -244,10 +254,12 @@ buildRiparianFraction <- function(
   # CASE 2 =========================================================
   
   dist_r <- terra::distance(hydro_template, streams)
+  ## --- CHECK alignment ---
   stopifnot(
     terra::ext(dist_r) == terra::ext(bufferRaster),
     all(terra::res(dist_r) == terra::res(bufferRaster))
   )
+  
   
   rip_hi <- terra::ifel(
     dist_r <= bufferRaster,
