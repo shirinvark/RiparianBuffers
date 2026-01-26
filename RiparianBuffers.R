@@ -120,17 +120,29 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       ## ----------------------------------
       ## 3) Rasterize provinces directly on hydro grid
       ## ----------------------------------
-      bufferRaster <- terra::rasterize(
+      # rasterize province_code as factor
+      prov_r <- terra::rasterize(
         sim$Provinces,
         hydro_template,
         field = "province_code"
       )
       
-      bufferRaster <- bufferRaster * NA_real_
+      prov_r <- terra::as.factor(prov_r)
       
-      for (i in seq_len(nrow(policy))) {
-        bufferRaster[bufferRaster == policy$province_code[i]] <- policy$buffer_m[i]
-      }
+      # build lookup table
+      lut <- data.frame(
+        from = policy$province_code,
+        to   = policy$buffer_m,
+        stringsAsFactors = FALSE
+      )
+      
+      # reclassify province raster → buffer distance raster
+      bufferRaster <- terra::classify(
+        prov_r,
+        lut,
+        others = NA_real_
+      )
+      
       
       ## ----------------------------------
       ## 4) Compute riparian fraction
