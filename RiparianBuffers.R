@@ -132,7 +132,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       )
       terra::values(hydro_template) <- NA_real_
       checkRaster(hydro_template, "hydro_template")
-      plotIfAllNA(hydro_template, "hydro_template")
+      #plotIfAllNA(hydro_template, "hydro_template")
       
       ## 3) Province → buffer raster (NUMERIC, SAFE)
       
