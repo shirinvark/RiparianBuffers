@@ -280,9 +280,12 @@ buildRiparianFraction <- function(
   #Case 2 =========================================================
   # aligned high-resolution template
   
-  bufferRaster <- terra::disagg(
+  # CASE 2 =========================================================
+  
+  bufferRaster <- terra::resample(
     bufferRaster,
-    fact = ceiling(res(PlanningRaster)[1] / hydroRaster_m)
+    hydro_template,
+    method = "near"
   )
   
   dist_r <- terra::distance(hydro_template, streams)
