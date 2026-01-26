@@ -57,6 +57,11 @@ No data download. No landbase decisions",
       desc        = "Coarse-resolution planning raster supplied by upstream module",
       sourceURL  = NA
     ),
+    expectsInput(
+      objectName  = "Hydrology_streams",
+      objectClass = "SpatVector",
+      desc = "Hydrological stream network extracted upstream"
+    ),
     ## Provinces are supplied by EasternCanadaDataPrep
     ## and are used ONLY to spatially apply province-specific
     ## riparian buffer policies (no landbase decisions here).
@@ -64,12 +69,6 @@ No data download. No landbase decisions",
       objectName  = "Provinces",
       objectClass = "SpatVector",
       desc        = "Provincial boundaries with province_code"
-    ),
-    
-    expectsInput(
-      objectName  = "Hydrology",
-      objectClass = "list",
-      desc = "Hydrology inputs prepared upstream (EasternCanadaDataPrep); must contain element `streams` (SpatVector)"
     ),
   ),
   outputObjects = bindrows(
@@ -96,8 +95,8 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       ## --- CHECK inputs ---
       stopifnot(inherits(sim$PlanningRaster, "SpatRaster"))
       stopifnot(inherits(sim$Provinces, "SpatVector"))
-      stopifnot(is.list(sim$Hydrology))
-      stopifnot(inherits(sim$Hydrology$streams, "SpatVector"))
+      stopifnot(inherits(sim$Hydrology_streams, "SpatVector"))
+      
       
       ## 1) Riparian policy
       policy <- P(sim)$riparianPolicy
@@ -145,10 +144,11 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       ## 4) Riparian fraction
       rip_frac <- buildRiparianFraction(
         PlanningRaster = sim$PlanningRaster,
-        streams        = sim$Hydrology$streams,
+        streams        = sim$Hydrology_streams,
         bufferRaster   = bufferRaster,
         hydroRaster_m  = P(sim)$hydroRaster_m
       )
+      
       
       ## 5) SAVE OUTPUT  🔴🔴🔴
       sim$Riparian <- list(
@@ -187,7 +187,7 @@ buildRiparianFraction <- function(
   
   # --- sanity check ---
   if (is.null(streams)) {
-    stop("Hydrology$streams is missing. Run EasternCanadaDataPrep before RiparianBuffers
+    stop("Hydrology_streams is missing. Supply streams upstream before RiparianBuffers. Run EasternCanadaDataPrep before RiparianBuffers
 .")
   }
   
@@ -309,7 +309,10 @@ buildRiparianFraction <- function(
   # if (!suppliedElsewhere('defaultColor', sim)) {
   #   sim$map <- Cache(prepInputs, extractURL('map')) # download, extract, load file from url in sourceURL
   # }
-
+  ## NOTE:
+  ## This module expects all inputObjects to be supplied upstream.
+  ## No defaults are created here by design.
+  
   #cacheTags <- c(currentModule(sim), "function:.inputObjects") ## uncomment this if Cache is being used
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
