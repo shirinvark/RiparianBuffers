@@ -273,8 +273,7 @@ buildRiparianFraction <- function(
   
   
   fact <- ceiling(res(PlanningRaster)[1] / hydroRaster_m)
-  rip_hi <- terra::as.numeric(rip_hi)
-  terra::values(rip_hi)[is.na(terra::values(rip_hi))] <- 0
+  
   
   riparian_fraction <- terra::aggregate(
     rip_hi,
