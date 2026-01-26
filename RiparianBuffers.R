@@ -73,16 +73,12 @@ No data download. No landbase decisions",
   ),
   outputObjects = bindrows(
     createsOutput(
-      objectName  = "RiparianFraction",
-      objectClass = "SpatRaster",
-      desc        = "Fractional riparian influence raster"
-    ),
-    createsOutput(
-      objectName  = "RiparianMeta",
+      objectName  = "Riparian",
       objectClass = "list",
-      desc        = "Metadata for riparian computation (policy, resolution, etc.)"
+      desc        = "Riparian outputs (fraction raster + metadata)"
     )
   )
+  
   
 ))
 
@@ -152,11 +148,12 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       
       
       ## 5) SAVE OUTPUT  🔴🔴🔴
-      sim$RiparianFraction <- rip_frac
-      sim$RiparianMeta <- list(
-        raster_m = P(sim)$hydroRaster_m,
-        policy   = policy
+      sim$Riparian <- list(
+        riparianFraction = rip_frac,
+        raster_m         = P(sim)$hydroRaster_m,
+        policy           = policy
       )
+      
       
     }
   )
