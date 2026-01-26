@@ -85,21 +85,19 @@ No data download. No landbase decisions",
 ## into a spatially explicit buffer raster, then
 ## computes proportional riparian influence.
 
-doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
+doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
+  
   message(">>> NEW RiparianBuffers code <<<")
+  
   switch(
     eventType,
     
     init = {
       
-      ## ----------------------------------
       ## 1) Riparian policy
-      ## ----------------------------------
       policy <- P(sim)$riparianPolicy
-      
       if (is.null(policy)) {
         message("riparianPolicy not supplied; using default conservative 30 m baseline.")
-        
         policy <- data.frame(
           province_code = c("BC","AB","SK","MB","ON","QC","NB","NS","NL","PE"),
           buffer_m = rep(300, 10),
@@ -107,26 +105,7 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
         )
       }
       
-      ## ----------------------------------
-      ## 2) Create numeric province IDs
-      ## ----------------------------------
-      prov_levels <- unique(policy$province_code)
-      
-      prov_id_lut <- data.frame(
-        province_code = prov_levels,
-        prov_id = seq_along(prov_levels)
-      )
-      
-      # attach numeric ID to Provinces vector
-      sim$Provinces$prov_id <- prov_id_lut$prov_id[
-        match(sim$Provinces$province_code, prov_id_lut$province_code)
-      ]
-      
-      stopifnot(!any(is.na(sim$Provinces$prov_id)))
-      
-      ## ----------------------------------
-      ## 3) Hydro template (single source of truth)
-      ## ----------------------------------
+      ## 2) Hydro template
       hydro_template <- terra::rast(
         ext = terra::ext(sim$PlanningRaster),
         resolution = P(sim)$hydroRaster_m,
@@ -134,34 +113,46 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       )
       terra::values(hydro_template) <- NA_real_
       
-      ## ----------------------------------
-      ## 4) Rasterize numeric province ID
-      ## ----------------------------------
-      prov_r <- terra::rasterize(
-        sim$Provinces,
+      ## 3) Province → buffer raster (NUMERIC, SAFE)
+      
+      ## 3) Province → buffer raster (NUMERIC, SAFE)
+      
+      prov <- sim$Provinces
+      prov <- terra::merge(prov, policy, by = "province_code", all.x = TRUE)
+      
+      if (any(is.na(prov$buffer_m))) {
+        stop("Some provinces have no buffer_m defined in riparianPolicy.")
+      }
+      
+      bufferRaster <- terra::rasterize(
+        prov,
         hydro_template,
-        field = "prov_id"
+        field = "buffer_m"
       )
       
-      ## ----------------------------------
-      ## 5) Province ID → buffer distance
-      ## ----------------------------------
-      buffer_lut <- data.frame(
-        from = prov_id_lut$prov_id,
-        to   = policy$buffer_m
+      
+
+      
+      ## 4) Riparian fraction
+      rip_frac <- buildRiparianFraction(
+        PlanningRaster = sim$PlanningRaster,
+        streams        = sim$Hydrology$streams,
+        bufferRaster   = bufferRaster,
+        hydroRaster_m  = P(sim)$hydroRaster_m
       )
       
-      bufferRaster <- terra::classify(
-        prov_r,
-        buffer_lut,
-        others = NA_real_
+      ## 5) SAVE OUTPUT  🔴🔴🔴
+      sim$Riparian <- list(
+        riparianFraction = rip_frac,
+        raster_m         = P(sim)$hydroRaster_m,
+        policy           = policy
       )
       
+      return(sim)   # ⬅⬅⬅ این خط حیاتی بود
     }
   )
-  
-  invisible(sim)
 }
+
 
 ## Compute riparian influence as a fractional raster.
 ##
@@ -253,6 +244,10 @@ buildRiparianFraction <- function(
   # CASE 2 =========================================================
   
   dist_r <- terra::distance(hydro_template, streams)
+  stopifnot(
+    terra::ext(dist_r) == terra::ext(bufferRaster),
+    all(terra::res(dist_r) == terra::res(bufferRaster))
+  )
   
   rip_hi <- terra::ifel(
     dist_r <= bufferRaster,
