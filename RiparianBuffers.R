@@ -93,38 +93,8 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
     init = {
       
       ## ----------------------------------
-      ## 1) Province raster
+      ## 1) Riparian policy
       ## ----------------------------------
-      ## Rasterize provincial boundaries to the planning grid
-      ## so that each planning cell is assigned a province_code.
-      ## This raster is used exclusively to map policy-defined
-      ## buffer distances to space.
-      ## It is not stored as an output to avoid duplicating
-      ## landbase or jurisdiction layers downstream.
-      
-      prov_r <- terra::rasterize(
-        sim$Provinces,
-        sim$PlanningRaster,
-        field = "province_code"
-      )
-      
-      ## ----------------------------------
-      ## 2) Build bufferRaster from policy
-      ## ----------------------------------
-      ## Province-level riparian policy table
-      ## Expected columns:
-      ##   - province_code : character (e.g., ON, QC, NB)
-      ##   - buffer_m      : numeric buffer distance in meters
-      ##
-      ## Policy is supplied by the user to allow
-      ## jurisdiction-specific riparian rules.
-      ## Design note:
-      ## Riparian policy is expressed as a simple table
-      ## rather than hard-coded logic, to allow:
-      ##  - transparent comparison across jurisdictions
-      ##  - easy sensitivity testing
-      ##  - future extension to scenario-based policies
-      
       policy <- P(sim)$riparianPolicy
       
       if (is.null(policy)) {
@@ -137,34 +107,34 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
         )
       }
       
-      ## Build a spatially-explicit buffer raster where
-      ## each cell stores the riparian buffer distance (m)
-      ## defined by its province-specific policy.
-      ## This raster enables variable-width buffers
-      ## without modifying hydrology geometry.
+      ## ----------------------------------
+      ## 2) Build hydro template (single source of truth)
+      ## ----------------------------------
+      hydro_template <- terra::rast(
+        ext = terra::ext(sim$PlanningRaster),
+        resolution = P(sim)$hydroRaster_m,
+        crs = terra::crs(sim$PlanningRaster)
+      )
+      terra::values(hydro_template) <- NA_real_
       
-      bufferRaster <- prov_r * NA_real_
+      ## ----------------------------------
+      ## 3) Rasterize provinces directly on hydro grid
+      ## ----------------------------------
+      bufferRaster <- terra::rasterize(
+        sim$Provinces,
+        hydro_template,
+        field = "province_code"
+      )
+      
+      bufferRaster <- bufferRaster * NA_real_
       
       for (i in seq_len(nrow(policy))) {
-        idx <- prov_r == policy$province_code[i]
-        bufferRaster[idx] <- policy$buffer_m[i]
+        bufferRaster[bufferRaster == policy$province_code[i]] <- policy$buffer_m[i]
       }
-      vals <- values(bufferRaster)
-      if (any(!is.na(vals))) {
-        stopifnot(is.numeric(vals[!is.na(vals)]))
-      }
-      ## ----------------------------------
-      ## 3) Compute riparian fraction
-      ## ----------------------------------
-      ## Compute proportional riparian influence using
-      ## a variable buffer raster derived from policy.
-      ## Hydrology geometry remains unchanged; only
-      ## the effective buffer distance varies spatially.
-      ## Note:
-      ## This step computes *physical influence* only.
-      ## Interpretation as a constraint, exclusion, or
-      ## weighting is deferred to downstream modules.
       
+      ## ----------------------------------
+      ## 4) Compute riparian fraction
+      ## ----------------------------------
       rip_frac <- buildRiparianFraction(
         PlanningRaster = sim$PlanningRaster,
         streams        = sim$Hydrology$streams,
@@ -173,15 +143,8 @@ doEvent.RiparianBuffers<- function(sim, eventTime, eventType) {
       )
       
       ## ----------------------------------
-      ## 4) Save output
+      ## 5) Save output
       ## ----------------------------------
-      ## Riparian output:
-      ## - riparianFraction : proportional influence raster
-      ## - raster_m         : resolution used for computation
-      ## - policy           : policy table used (for provenance)
-      ## No harvest, landbase, or eligibility decisions
-      ## are made at this stage.
-      
       sim$Riparian <- list(
         riparianFraction = rip_frac,
         raster_m         = P(sim)$hydroRaster_m,
@@ -281,12 +244,6 @@ buildRiparianFraction <- function(
   # aligned high-resolution template
   
   # CASE 2 =========================================================
-  
-  bufferRaster <- terra::resample(
-    bufferRaster,
-    hydro_template,
-    method = "near"
-  )
   
   dist_r <- terra::distance(hydro_template, streams)
   
