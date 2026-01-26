@@ -73,11 +73,17 @@ No data download. No landbase decisions",
   ),
   outputObjects = bindrows(
     createsOutput(
-      objectName  = "Riparian",
+      objectName  = "RiparianFraction",
+      objectClass = "SpatRaster",
+      desc        = "Fractional riparian influence raster"
+    ),
+    createsOutput(
+      objectName  = "RiparianMeta",
       objectClass = "list",
-      desc        = "Proportional riparian fraction raster and metadata"
+      desc        = "Metadata for riparian computation (policy, resolution, etc.)"
     )
   )
+  
 ))
 checkRaster <- function(r, name) {
   message("---- Checking ", name, " ----")
@@ -170,10 +176,10 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       
       
       ## 5) SAVE OUTPUT  🔴🔴🔴
-      sim$Riparian <- list(
-        riparianFraction = rip_frac,
-        raster_m         = P(sim)$hydroRaster_m,
-        policy           = policy
+      sim$RiparianFraction <- rip_frac
+      sim$RiparianMeta <- list(
+        raster_m = P(sim)$hydroRaster_m,
+        policy   = policy
       )
       
     }
