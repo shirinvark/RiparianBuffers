@@ -274,12 +274,10 @@ buildRiparianFraction <- function(
   
   fact <- ceiling(res(PlanningRaster)[1] / hydroRaster_m)
   
-  
   riparian_fraction <- terra::aggregate(
     rip_hi,
     fact = fact,
-    fun  = mean,
-    na.rm = TRUE
+    fun = function(x) mean(x, na.rm = TRUE)
   )
   
   riparian_fraction <- terra::resample(
@@ -290,6 +288,7 @@ buildRiparianFraction <- function(
   
   riparian_fraction[is.na(riparian_fraction)] <- 0
   riparian_fraction <- pmin(pmax(riparian_fraction, 0), 1)
+  
   
   return(riparian_fraction)
 }
