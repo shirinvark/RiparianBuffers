@@ -252,6 +252,9 @@ buildRiparianFraction <- function(
   # aligned high-resolution template
   
   # CASE 2 =========================================================
+  ## ---- FIX terra::ifel NA bug ----
+  bufferRaster2 <- bufferRaster
+  bufferRaster2[is.na(bufferRaster2)] <- 0
   
   dist_r <- terra::distance(hydro_template, streams)
   ## --- CHECK alignment ---
@@ -260,12 +263,12 @@ buildRiparianFraction <- function(
     all(terra::res(dist_r) == terra::res(bufferRaster))
   )
   
-  
   rip_hi <- terra::ifel(
-    dist_r <= bufferRaster,
+    dist_r <= bufferRaster2,
     1,
     0
   )
+  
   
   fact <- ceiling(res(PlanningRaster)[1] / hydroRaster_m)
   
