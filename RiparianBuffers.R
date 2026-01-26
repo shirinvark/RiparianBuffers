@@ -277,8 +277,10 @@ buildRiparianFraction <- function(
   riparian_fraction <- terra::aggregate(
     rip_hi,
     fact = fact,
-    fun = function(x) mean(x, na.rm = TRUE)
+    fun  = "mean",
+    na.rm = TRUE
   )
+  
   
   riparian_fraction <- terra::resample(
     riparian_fraction,
