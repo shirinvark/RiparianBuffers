@@ -237,11 +237,14 @@ buildRiparianFraction <- function(
     streams <- terra::project(streams, PlanningRaster)
   }
   # high-resolution template (shared)
-  hydro_template <- terra::rast(PlanningRaster)
-  hydro_template <- terra::disagg(
-    hydro_template,
-    fact = ceiling(res(PlanningRaster)[1] / hydroRaster_m)
+  hydro_template <- terra::rast(
+    ext = terra::ext(PlanningRaster),
+    resolution = hydroRaster_m,
+    crs = terra::crs(PlanningRaster)
   )
+  terra::values(hydro_template) <- NA_real_
+  
+  
   
   ## Internal high-resolution raster used to compute
   ## proportional riparian influence.
