@@ -253,9 +253,7 @@ buildRiparianFraction <- function(
   
   # CASE 2 =========================================================
   ## ---- FIX terra::ifel NA bug ----
-  bufferRaster2 <- bufferRaster
-  bufferRaster2[is.na(bufferRaster2)] <- 0
-  
+
   dist_r <- terra::distance(hydro_template, streams)
   ## --- CHECK alignment ---
   stopifnot(
@@ -263,11 +261,15 @@ buildRiparianFraction <- function(
     all(terra::res(dist_r) == terra::res(bufferRaster))
   )
   
-  rip_hi <- terra::ifel(
-    dist_r <= bufferRaster2,
-    1,
-    0
-  )
+  ## ---- SAFE riparian mask (NO ifel) ----
+  
+  cond <- dist_r <= bufferRaster
+  
+  # هر NA → FALSE
+  cond[is.na(cond)] <- FALSE
+  
+  # logical → numeric {0,1}
+  rip_hi <- cond * 1
   
   
   fact <- ceiling(res(PlanningRaster)[1] / hydroRaster_m)
