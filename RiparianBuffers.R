@@ -93,7 +93,6 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   browser()
   switch(
     eventType,
-    p
     init = {
       ## --- CHECK inputs ---
       stopifnot(inherits(sim$PlanningRaster, "SpatRaster"))
