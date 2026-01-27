@@ -90,10 +90,10 @@ No data download. No landbase decisions",
 doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   
   message(">>> NEW RiparianBuffers code <<<")
-  
+  browser()
   switch(
     eventType,
-    
+    p
     init = {
       ## --- CHECK inputs ---
       stopifnot(inherits(sim$PlanningRaster, "SpatRaster"))
@@ -139,6 +139,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       
       
       ## 4) Riparian fraction
+     
       rip_frac <- buildRiparianFraction(
         PlanningRaster = sim$PlanningRaster,
         streams        = sim$Hydrology_streams,
@@ -182,7 +183,7 @@ buildRiparianFraction <- function(
   ## Enforce a single buffering strategy:
   ## either uniform (riparianBuffer_m) OR
   ## spatially variable (bufferRaster), but never both.
-  
+  browser()
   # --- sanity check ---
   if (is.null(streams)) {
     stop("Hydrology_streams is missing. Supply streams upstream before RiparianBuffers. Run EasternCanadaDataPrep before RiparianBuffers
@@ -287,8 +288,7 @@ buildRiparianFraction <- function(
   )
   
   riparian_fraction[is.na(riparian_fraction)] <- 0
-  riparian_fraction <- pmin(pmax(riparian_fraction, 0), 1)
-  
+
   
   return(riparian_fraction)
 }
