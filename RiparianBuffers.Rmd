@@ -1,62 +1,78 @@
 ---
-title: "RiparianBuffers Manual"
-subtitle: "v.`r SpaDES.core::moduleMetadata(module = 'RiparianBuffers', path = '..')$version`"
-date: "Last updated: `r Sys.Date()`"
+title: "RiparianBuffers Module"
+author: "RiparianBuffers development team"
 output:
-  bookdown::html_document2:
+  html_document:
+    theme: readable
     toc: true
-    toc_float: true
-    theme: sandstone
-    number_sections: false
-    df_print: paged
-    keep_md: yes
-editor_options:
-  chunk_output_type: console
-link-citations: true
-always_allow_html: true
----
-## Overview
-
-This module translates hydrological stream geometry into a continuous spatial
-signal representing riparian influence.
-
-The module is intentionally **policy-aware but decision-neutral**.
-
+    toc_depth: 2
+    number_sections: true
 ---
 
-## Design philosophy
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+```
+Overview
+RiparianBuffers is a SpaDES module that computes a fractional riparian influence raster (values between 0 and 1) from hydrological stream geometry and buffer-distance rules.
 
-Riparian influence is treated as a physical signal rather than a binary constraint.
+The module is policy-aware but decision-free.
+It generates a spatial signal only.
 
-This design allows:
-- comparison across jurisdictions
-- sensitivity analysis
-- deferred interpretation in downstream modules
+Purpose
+Riparian effects are often implemented as binary exclusions or embedded in landbase logic.
+This module separates signal generation from decision-making.
 
----
+What the module does
+Computes fractional riparian influence (0–1)
 
-## Province-based riparian policy
+Supports uniform or province-based buffer distances
 
-Jurisdictional differences in riparian regulations are expressed
-as a simple policy table with the following fields:
+Preserves sub-cell riparian structure
 
-- `province_code`
-- `buffer_m`
+Produces reusable outputs for downstream modules
 
-This approach avoids embedding policy logic directly into hydrological processing
-and enables transparent modification or scenario testing.
+What the module does not do
+Define landbase or effective harvestable area
 
----
+Apply harvest or regulatory exclusions
 
-## Outputs
+Classify forest / non-forest land
 
-The primary output is a raster expressing proportional riparian influence,
-which can be interpreted differently depending on downstream use cases.
+Interpret policy or management rules
 
----
+Inputs
+Input object	Class	Description
+PlanningRaster	SpatRaster	Target planning grid
+Hydrology_streams	SpatVector	Stream / river network
+Provinces	SpatVector	Jurisdiction boundaries
+Buffer policy
+A single buffering strategy is used per run.
 
-## Future directions
+data.frame(
+  province_code = c("ON", "QC", "NB"),
+  buffer_m      = c(300, 300, 300)
+)
+Buffer distances are applied geometrically only.
 
-- Integration with landbase accounting modules
-- Scenario-based riparian policy testing
-- Evaluation of ecological versus regulatory buffer widths
+Outputs
+sim$Riparian
+Element	Description
+riparianFraction	Fractional riparian influence (0–1)
+raster_m	Resolution used for computation
+policy	Buffer policy applied
+Interpretation
+0 → no riparian influence
+
+1 → fully riparian
+
+intermediate values → partial influence
+
+Downstream modules decide how this signal is used.
+
+Summary
+RiparianBuffers produces a transparent and reusable spatial signal representing riparian influence, without embedding landbase or management assumptions.
+

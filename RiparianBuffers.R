@@ -310,7 +310,7 @@ buildRiparianFraction <- function(
   ## This module expects all inputObjects to be supplied upstream.
   ## No defaults are created here by design.
   
-  #cacheTags <- c(currentModule(sim), "function:.inputObjects") ## uncomment this if Cache is being used
+  #cacheTags <- c(currentModule(sim), "function:.inputObjects") # uncomment this if Cache is being used
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 

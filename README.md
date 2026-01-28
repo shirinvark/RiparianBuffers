@@ -1,54 +1,107 @@
-# RiparianBuffers
+s
 
-This module computes raster-based riparian influence from hydrological features.
-It does **not** make landbase, harvesting, or legal decisions.
+<sub><em>Fractional riparian influence from hydrology and buffer policy</em></sub>
 
-The output is intended to be consumed by downstream modules
-(e.g. landbase accounting, AAC calculations, or constraint evaluation).
+🎯 Purpose
 
----
+Generate a fractional riparian influence raster (0–1) from hydrological streams and buffer rules.
 
-## What this module does
+Nothing else.
 
-- Takes hydrological stream geometry prepared upstream
-- Applies either:
-  - a uniform riparian buffer, or
-  - province-specific buffer rules (policy-driven)
-- Produces a **fractional riparian influence raster**
+✅ What this module does
 
----
+Produces a continuous riparian signal at planning resolution
 
-## What this module does NOT do
+Supports uniform or province-based buffer distances
 
-- Does not exclude land
-- Does not classify forest vs non-forest
-- Does not apply regulatory or management constraints
+Preserves sub-cell riparian structure via high-resolution processing
 
-All interpretation of riparian influence is deferred to downstream modules.
+Outputs are reusable across harvesting, habitat, and AAC workflows
 
----
+🚫 What this module explicitly does NOT do
 
-## Inputs
+Landbase definition
 
-- `PlanningRaster` (SpatRaster)  
-  Coarse-resolution planning grid supplied by an upstream module.
+Harvest or regulatory exclusions
 
-- `Hydrology$streams` (SpatVector)  
-  Stream network geometry.
+Forest / non-forest classification
 
-- `Provinces` (SpatVector, optional)  
-  Used only when province-based riparian policy is applied.
+Management or policy interpretation
 
----
+These decisions are intentionally downstream.
 
-## Outputs
+📥 Required inputs (supplied upstream)
+Object	Class	Role
+PlanningRaster	SpatRaster	Target planning grid
+Hydrology_streams	SpatVector	Stream network
+Provinces	SpatVector	Jurisdictions (province_code)
+⚖️ Buffer policy handling
 
-- `Riparian$riparianFraction`  
-  Raster expressing proportional riparian influence.
+Exactly one buffering strategy is used per run:
 
----
+Option A — Uniform buffer
 
-## Status
+Single distance applied everywhere (baseline / testing).
 
-This module is under active development.
-Design choices are being refined in coordination with upstream and downstream modules.
+Option B — Province-based policy (typical use)
+data.frame(
+  province_code = c("ON", "QC", "NB"),
+  buffer_m      = c(300, 300, 300)
+)
+
+
+If no policy is supplied, a conservative default is used.
+
+Buffer distances are applied geometrically only.
+No regulatory meaning is inferred.
+
+⚙️ Core computation (high-level)
+
+Validate spatial inputs
+
+Resolve buffer strategy
+
+Compute distance-to-stream (high resolution)
+
+Convert distance ≤ buffer → riparian mask
+
+Aggregate to planning grid → fraction (0–1)
+
+No thresholds.
+No exclusions.
+No interpretation.
+
+📤 Output
+sim$Riparian
+
+Element	Description
+riparianFraction	Fractional riparian influence (0–1)
+raster_m	Resolution used for computation
+policy	Buffer policy applied
+
+Value meaning
+
+0 → no riparian influence
+
+1 → fully riparian
+
+0–1 → partial influence
+
+🔁 Design principle
+
+This module generates signal, not decisions.
+
+Keeping riparian influence continuous and policy-agnostic ensures:
+
+transparent assumptions
+
+easier review
+
+flexible downstream use
+
+🧭 Data flow
+flowchart LR
+Hydrology_streams --> RiparianBuffers
+Provinces --> RiparianBuffers
+PlanningRaster --> RiparianBuffers
+RiparianBuffers --> RiparianFraction

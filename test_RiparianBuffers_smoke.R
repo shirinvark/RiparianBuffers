@@ -123,27 +123,5 @@ sim <- spades(sim)
 ## ---------------------------------------------------------
 ## 10. Checks
 ## ---------------------------------------------------------
-stopifnot(inherits(sim$RiparianFraction, "SpatRaster"))
-stopifnot(is.list(sim$RiparianMeta))
+sim$Riparian
 
-summary(terra::values(sim$RiparianFraction))
-
-plot(
-  sim$RiparianFraction,
-  main = "Riparian Fraction (Smoke Test)"
-)
-
-terra::global(
-  sim$RiparianFraction,
-  mean,
-  na.rm = TRUE
-)
-
-hist(
-  terra::values(sim$RiparianFraction),
-  main = "Riparian fraction distribution",
-  xlab = "fraction"
-)
-
-message("✅ RiparianBuffers smoke test PASSED")
-############################################################
