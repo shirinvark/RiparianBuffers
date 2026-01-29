@@ -17,62 +17,101 @@ knitr::opts_chunk$set(
 )
 ```
 Overview
-RiparianBuffers is a SpaDES module that computes a fractional riparian influence raster (values between 0 and 1) from hydrological stream geometry and buffer-distance rules.
+RiparianBuffers is a SpaDES data-preparation module that computes a fractional riparian influence raster
+(values between 0 and 1) from hydrological features and buffer-distance rules.
 
 The module is policy-aware but decision-free.
-It generates a spatial signal only.
+It generates a spatial signal only, without embedding landbase, harvesting, or regulatory assumptions.
 
 Purpose
-Riparian effects are often implemented as binary exclusions or embedded in landbase logic.
-This module separates signal generation from decision-making.
+Riparian effects are often implemented as:
+
+binary exclusions,
+
+hard masks,
+
+or logic embedded directly in landbase or harvesting modules.
+
+This makes riparian influence opaque and difficult to reuse.
+
+RiparianBuffers separates signal generation from decision-making by producing a continuous riparian influence surface that can be interpreted downstream in multiple ways.
 
 What the module does
-Computes fractional riparian influence (0–1)
+Computes fractional riparian influence (0–1) per planning cell
 
 Supports uniform or province-based buffer distances
 
-Preserves sub-cell riparian structure
+Integrates streams and lakes as hydrological features
 
-Produces reusable outputs for downstream modules
+Preserves sub-cell riparian structure via higher-resolution distance calculations
+
+Produces transparent, reusable outputs for downstream modules
 
 What the module does not do
 Define landbase or effective harvestable area
 
-Apply harvest or regulatory exclusions
+Apply harvesting, regulatory, or policy exclusions
 
-Classify forest / non-forest land
+Classify forest vs. non-forest land
 
-Interpret policy or management rules
+Interpret management intent or policy compliance
+
+All decisions are deferred to downstream modules.
 
 Inputs
 Input object	Class	Description
 PlanningRaster	SpatRaster	Target planning grid
 Hydrology_streams	SpatVector	Stream / river network
-Provinces	SpatVector	Jurisdiction boundaries
+Hydrology_lakes	SpatVector	Lakes and large water bodies
+Provinces	SpatVector	Jurisdiction boundaries with province_code
+All spatial inputs are expected to be prepared, projected, and cropped upstream
+(e.g., by EasternCanadaDataPrep).
+
 Buffer policy
-A single buffering strategy is used per run.
+A single buffering strategy is applied per simulation.
+
+For jurisdiction-specific buffering, the policy is supplied as a data frame:
 
 data.frame(
   province_code = c("ON", "QC", "NB"),
   buffer_m      = c(300, 300, 300)
 )
 Buffer distances are applied geometrically only.
+No regulatory interpretation is performed in this module.
+
+Method overview
+Hydrological features (streams and lakes) are rasterized on a high-resolution grid
+
+Distance-to-hydrology is computed at that resolution
+
+Distance thresholds are applied based on the supplied buffer policy
+
+Binary riparian presence is aggregated to the planning grid
+
+Each planning cell receives a fractional riparian influence value (0–1)
+
+The computational resolution is controlled by the parameter hydroRaster_m.
 
 Outputs
+The module creates a single output object:
+
 sim$Riparian
 Element	Description
 riparianFraction	Fractional riparian influence (0–1)
-raster_m	Resolution used for computation
+raster_m	Resolution used for distance calculations
 policy	Buffer policy applied
 Interpretation
 0 → no riparian influence
 
 1 → fully riparian
 
-intermediate values → partial influence
+intermediate values → partial riparian influence
 
-Downstream modules decide how this signal is used.
+Downstream modules decide how (or whether) this signal is used
+(e.g., masking, weighting, exclusion, or reporting).
 
 Summary
-RiparianBuffers produces a transparent and reusable spatial signal representing riparian influence, without embedding landbase or management assumptions.
+RiparianBuffers produces a transparent, reproducible, and reusable spatial signal representing riparian influence.
+
+By separating hydrological geometry and buffering rules from management decisions, the module supports flexible downstream use in landbase estimation, harvesting models, habitat analyses, and reporting workflows.
 

@@ -1,86 +1,85 @@
 # RiparianBuffers
-*A SpaDES module for generating fractional riparian influence*
+A SpaDES module for generating fractional riparian influence
 
----
+Overview
 
-## Overview
+RiparianBuffers computes a fractional riparian influence raster (values between 0 and 1) from hydrological features and buffer-distance rules.
 
-**RiparianBuffers** computes a **fractional riparian influence raster (0–1)** from hydrological stream geometry and buffer-distance rules.
+The module is policy-aware but decision-free:
+it generates a continuous spatial signal only and deliberately avoids landbase, harvesting, or management assumptions.
 
-The module is **policy-aware but decision-free**:  
-it generates a spatial signal only and deliberately avoids landbase or management assumptions.
+Why this module exists
 
----
+Riparian effects are often implemented as:
 
-## Why this module exists
+binary exclusions, or
 
-Riparian constraints are often implemented as:
-- binary exclusions, or
-- hard-coded rules embedded in landbase logic.
+hard-coded rules embedded in landbase logic.
 
-That approach hides assumptions and limits reuse.
+These approaches hide assumptions and limit reuse.
 
-**RiparianBuffers separates concerns** by translating hydrology and buffer rules into a **continuous spatial signal** that downstream modules can interpret as needed.
+RiparianBuffers separates concerns by translating hydrological geometry and buffer rules into a transparent, reusable spatial signal that downstream modules can interpret as needed.
 
----
+What this module does
 
-## What this module does
+✔ Computes fractional riparian influence (0–1) at planning resolution
+✔ Uses streams and lakes as hydrological sources
+✔ Supports uniform or province-based buffer distances
+✔ Preserves sub-cell riparian structure via higher-resolution processing
+✔ Produces outputs reusable across harvesting, habitat, and AAC workflows
 
-✔ Computes **fractional riparian influence (0–1)** at planning resolution  
-✔ Supports **uniform** or **province-based** buffer distances  
-✔ Preserves **sub-cell riparian structure** using higher-resolution processing  
-✔ Produces outputs reusable across harvesting, habitat, and AAC workflows  
+What this module does not do
 
----
+✘ Define landbase or effective harvestable area
+✘ Apply harvest, regulatory, or conservation exclusions
+✘ Classify forest / non-forest land
+✘ Interpret policy or management intent
 
-## What this module does *not* do
+All of these are explicitly downstream responsibilities.
 
-✘ Define landbase or effective harvestable area  
-✘ Apply harvest or regulatory exclusions  
-✘ Classify forest / non-forest land  
-✘ Interpret policy or management intent  
+Inputs (supplied upstream)
 
-All of these are **explicitly downstream responsibilities**.
+All spatial preparation (download, cropping, reprojection, filtering) is expected to occur upstream
+(e.g. in EasternCanadaDataPrep).
 
----
+Object	Class	Description
+PlanningRaster	SpatRaster	Target planning grid
+Hydrology_streams	SpatVector	Stream / river network
+Hydrology_lakes	SpatVector	Lakes and large water bodies
+Provinces	SpatVector	Jurisdiction boundaries (province_code)
+Buffer policy handling
 
-## Inputs (supplied upstream)
+Exactly one buffering strategy is used per simulation.
 
-| Object | Class | Description |
-|------|------|-------------|
-| `PlanningRaster` | `SpatRaster` | Target planning grid |
-| `Hydrology_streams` | `SpatVector` | Stream / river network |
-| `Provinces` | `SpatVector` | Jurisdiction boundaries (`province_code`) |
+Uniform buffer
 
----
-
-## Buffer policy handling
-
-Exactly **one buffering strategy** is used per simulation.
-
-### Uniform buffer
-A single buffer distance applied everywhere  
+A single buffer distance applied everywhere
 (useful for baseline testing or sensitivity analysis).
 
-### Province-based policy
+Province-based policy
+
 A table mapping jurisdictions to buffer distances:
 
-```r
 data.frame(
   province_code = c("ON", "QC", "NB"),
   buffer_m      = c(300, 300, 300)
 )
+
+
 If no policy is supplied, a conservative default is applied.
 
-Note
+Note:
 Buffer distances are applied geometrically only and carry no regulatory interpretation.
 
 Core computation (high level)
-Validate spatial inputs (class and CRS)
 
-Resolve buffering strategy
+Validate spatial inputs (class and CRS consistency)
 
-Compute distance-to-stream at high resolution
+Resolve buffering strategy (uniform or policy-based)
+
+Rasterize hydrology (streams + lakes) at higher resolution
+
+Compute distance-to-hydrology
 
 Convert distance ≤ buffer to a riparian mask
 
@@ -91,6 +90,7 @@ No exclusions.
 No interpretation.
 
 Outputs
+
 The module produces a single structured output:
 
 sim$Riparian
@@ -99,16 +99,17 @@ riparianFraction	Fractional riparian influence (0–1)
 raster_m	Resolution used for computation
 policy	Buffer policy applied
 Interpretation
+
 0 → no riparian influence
 
 1 → fully riparian
 
-0–1 → partial influence
+0–1 → partial riparian influence
 
 Downstream modules decide how this signal is used.
 
 Design principle
+
 RiparianBuffers generates signal, not decisions.
 
-This design improves transparency, reuse, and auditability across modelling workflows.
-
+This design improves transparency, reuse, and auditability across landscape modelling workflows.

@@ -58,6 +58,11 @@ No data download. No landbase decisions",
       sourceURL  = NA
     ),
     expectsInput(
+      objectName  = "Hydrology_lakes",
+      objectClass = "SpatVector",
+      desc        = "Hydrological lakes and large water bodies supplied upstream"
+    ),
+    expectsInput(
       objectName  = "Hydrology_streams",
       objectClass = "SpatVector",
       desc = "Hydrological stream network extracted upstream"
@@ -97,6 +102,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       stopifnot(inherits(sim$PlanningRaster, "SpatRaster"))
       stopifnot(inherits(sim$Provinces, "SpatVector"))
       stopifnot(inherits(sim$Hydrology_streams, "SpatVector"))
+      stopifnot(inherits(sim$Hydrology_lakes, "SpatVector"))
       
       
       ## 1) Riparian policy
@@ -141,9 +147,11 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       rip_frac <- buildRiparianFraction(
         PlanningRaster = sim$PlanningRaster,
         streams        = sim$Hydrology_streams,
+        lakes          = sim$Hydrology_lakes,
         bufferRaster   = bufferRaster,
         hydroRaster_m  = P(sim)$hydroRaster_m
       )
+      
       
       
       ## 5) SAVE OUTPUT  🔴🔴🔴
@@ -174,6 +182,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
 buildRiparianFraction <- function(
     PlanningRaster,
     streams,
+    lakes = NULL,
     riparianBuffer_m = NULL,   # buffer  
     bufferRaster     = NULL,   # buffer 
     hydroRaster_m    = 30
@@ -249,14 +258,30 @@ buildRiparianFraction <- function(
   
   # CASE 2 =========================================================
   ## ---- FIX terra::ifel NA bug ----
-  streams_r <- terra::rasterize(
+  hydro_r <- terra::rasterize(
     streams,
     hydro_template,
     field = 1,
     background = NA
   )
   
-  dist_r <- terra::distance(streams_r)
+  if (!is.null(lakes)) {
+    if (!terra::same.crs(lakes, PlanningRaster)) {
+      lakes <- terra::project(lakes, PlanningRaster)
+    }
+    
+    lakes_r <- terra::rasterize(
+      lakes,
+      hydro_template,
+      field = 1,
+      background = NA
+    )
+    
+    hydro_r <- terra::cover(hydro_r, lakes_r)
+  }
+  
+  dist_r <- terra::distance(hydro_r)
+  
   max_dist <- max(values(bufferRaster), na.rm = TRUE)
   dist_r[dist_r > max_dist] <- NA
   
