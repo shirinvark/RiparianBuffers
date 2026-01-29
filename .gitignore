@@ -1,6 +1,19 @@
+# R / RStudio
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+
+# Generated documentation
+*.html
+*.md
+
+# SpaDES / local runtime
+modules/
+outputs/
+cache/
+scratch/
+
+# Local helper scripts (not part of module API)
 standalone.R
 hydrocheck.R
