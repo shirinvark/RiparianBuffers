@@ -63,6 +63,11 @@ No data download. No landbase decisions",
       desc        = "Hydrological lakes and large water bodies supplied upstream"
     ),
     expectsInput(
+      objectName  = "Hydrology_basins",
+      objectClass = "SpatVector",
+      desc        = "Hydrological basins supplied upstream"
+    ),
+    expectsInput(
       objectName  = "Hydrology_streams",
       objectClass = "SpatVector",
       desc = "Hydrological stream network extracted upstream"
@@ -103,6 +108,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       stopifnot(inherits(sim$Provinces, "SpatVector"))
       stopifnot(inherits(sim$Hydrology_streams, "SpatVector"))
       stopifnot(inherits(sim$Hydrology_lakes, "SpatVector"))
+      stopifnot(inherits(sim$Hydrology_basins, "SpatVector"))
       
       
       ## 1) Riparian policy
@@ -148,6 +154,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
         PlanningRaster = sim$PlanningRaster,
         streams        = sim$Hydrology_streams,
         lakes          = sim$Hydrology_lakes,
+        basins = sim$Hydrology_basins,
         bufferRaster   = bufferRaster,
         hydroRaster_m  = P(sim)$hydroRaster_m
       )
