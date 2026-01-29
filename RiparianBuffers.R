@@ -42,7 +42,7 @@ No data download. No landbase decisions",
     defineParameter(
       "hydroRaster_m",
       "numeric",
-      100,
+      30,
       0,
       NA,
       "Resolution (m) used to compute proportional riparian fraction"
@@ -176,7 +176,7 @@ buildRiparianFraction <- function(
     streams,
     riparianBuffer_m = NULL,   # buffer  
     bufferRaster     = NULL,   # buffer 
-    hydroRaster_m    = 100
+    hydroRaster_m    = 30
 ) {
   ## Enforce a single buffering strategy:
   ## either uniform (riparianBuffer_m) OR
@@ -249,8 +249,16 @@ buildRiparianFraction <- function(
   
   # CASE 2 =========================================================
   ## ---- FIX terra::ifel NA bug ----
-
-  dist_r <- terra::distance(hydro_template, streams)
+  streams_r <- terra::rasterize(
+    streams,
+    hydro_template,
+    field = 1,
+    background = NA
+  )
+  
+  dist_r <- terra::distance(streams_r)
+  max_dist <- max(values(bufferRaster), na.rm = TRUE)
+  dist_r[dist_r > max_dist] <- NA
   
   ## --- CHECK alignment ---
   stopifnot(
