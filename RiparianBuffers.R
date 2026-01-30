@@ -154,7 +154,6 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
         PlanningRaster = sim$PlanningRaster,
         streams        = sim$Hydrology_streams,
         lakes          = sim$Hydrology_lakes,
-        basins = sim$Hydrology_basins,
         bufferRaster   = bufferRaster,
         hydroRaster_m  = P(sim)$hydroRaster_m
       )
