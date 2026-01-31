@@ -62,11 +62,11 @@ No data download. No landbase decisions",
       objectClass = "SpatVector",
       desc        = "Hydrological lakes and large water bodies supplied upstream"
     ),
-    expectsInput(
-      objectName  = "Hydrology_basins",
-      objectClass = "SpatVector",
-      desc        = "Hydrological basins supplied upstream"
-    ),
+   # expectsInput(
+     # objectName  = "Hydrology_basins",
+      #objectClass = "SpatVector",
+      #desc        = "Hydrological basins supplied upstream"
+    #),
     expectsInput(
       objectName  = "Hydrology_streams",
       objectClass = "SpatVector",
@@ -108,19 +108,27 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       stopifnot(inherits(sim$Provinces, "SpatVector"))
       stopifnot(inherits(sim$Hydrology_streams, "SpatVector"))
       stopifnot(inherits(sim$Hydrology_lakes, "SpatVector"))
-      stopifnot(inherits(sim$Hydrology_basins, "SpatVector"))
+     # stopifnot(inherits(sim$Hydrology_basins, "SpatVector"))
       
       
       ## 1) Riparian policy
+      ## Default policy reflects mean Canadian (Boreal) riparian buffer widths
+      ## reported in Lee, Smyth & Boutin (2004), without slope or fish modifiers.
+      
       policy <- P(sim)$riparianPolicy
       if (is.null(policy)) {
-        message("riparianPolicy not supplied; using default conservative 30 m baseline.")
+        message(
+          "riparianPolicy not supplied; using default boreal riparian buffer ",
+          "(30 m) based on mean Canadian provincial guidelines summarized in Lee et al. (2004)."
+        )
+        
         policy <- data.frame(
           province_code = c("BC","AB","SK","MB","ON","QC","NB","NS","NL","PE"),
-          buffer_m = rep(300, 10),
+          buffer_m = rep(30, 10),
           stringsAsFactors = FALSE
         )
       }
+      
       
       ## 2) Hydro template
       hydro_template <- terra::rast(
