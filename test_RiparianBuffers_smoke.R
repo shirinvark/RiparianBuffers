@@ -11,7 +11,7 @@ library(SpaDES.core)
 library(SpaDES.project)
 library(terra)
 library(sf)
-
+library(dplyr)
 ## ---------------------------------------------------------
 ## 1. Paths
 ## ---------------------------------------------------------

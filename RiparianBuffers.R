@@ -21,7 +21,7 @@ No data download. No landbase decisions",
     "terra"
   )
   ,
-  parameters = dplyr::bind_rows(
+  parameters = bindrows(
     defineParameter(
       "riparianBuffer_m",
       "numeric",
@@ -49,7 +49,7 @@ No data download. No landbase decisions",
     )
     
   ),
-  inputObjects = dplyr::bind_rows(
+  inputObjects =  bindrows(
     
     expectsInput(
       objectName  = "PlanningRaster",
@@ -81,7 +81,7 @@ No data download. No landbase decisions",
       desc        = "Provincial boundaries with province_code"
     ),
   ),
-  outputObjects = dplyr::bind_rows(
+  outputObjects =  bindrows(
     createsOutput(
       objectName  = "Riparian",
       objectClass = "list",
