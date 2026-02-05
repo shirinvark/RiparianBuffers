@@ -140,11 +140,13 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
-  # ! ----- EDIT BELOW ----- ! #
+ 
   if (!SpaDES.core::suppliedElsewhere("Policy")){#RiparianBufferPlolicy
-  
+    sim$riparianBufferPolicy <- data.frame(
+      province_code = c("BC","AB","SK","MB","ON","QC","NB","NS","NL","PE"),
+      buffer_m = rep(30, 10),
+      stringsAsFactors = FALSE
   }
-  # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
 }
 ## ------------------------------------------------------------------
