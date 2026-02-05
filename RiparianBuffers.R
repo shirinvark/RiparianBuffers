@@ -141,7 +141,9 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   # ! ----- EDIT BELOW ----- ! #
-
+  if (!SpaDES.core::suppliedElsewhere("Policy")){#RiparianBufferPlolicy
+  
+  }
   # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
 }
