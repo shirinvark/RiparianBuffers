@@ -30,14 +30,6 @@ No data download. No landbase decisions",
       NA,
       "Uniform riparian buffer distance (m) applied to hydrology streams"
     ),
-    defineParameter(
-      "riparianPolicy",
-      "data.frame",
-      NULL,
-      NA,
-      NA,
-      "Province-based riparian buffer policy (columns: province, buffer_m)"
-    ),
     
     defineParameter(
       "hydroRaster_m",
@@ -56,6 +48,11 @@ No data download. No landbase decisions",
       objectClass = "SpatRaster",
       desc        = "Coarse-resolution planning raster supplied by upstream module",
       sourceURL  = NA
+    ),
+    expectsInput(
+      objectName  = "riparianBufferPolicy",
+      objectClass = "data.frame",
+      desc        = "able of jurisdiction buffer width"
     ),
     expectsInput(
       objectName  = "Hydrology_lakes",
