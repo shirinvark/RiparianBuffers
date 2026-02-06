@@ -1,0 +1,6 @@
+﻿"province,waterbody_type,buffer_m,source"
+"DEFAULT,large_stream,30,placeholder"
+"DEFAULT,small_stream,30,placeholder"
+"DEFAULT,large_lake,30,placeholder"
+"DEFAULT,small_lake,30,placeholder"
+"DEFAULT,wetland,30,placeholder"
