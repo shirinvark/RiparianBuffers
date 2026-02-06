@@ -21,14 +21,14 @@ No data download. No landbase decisions",
     "terra"
   )
   ,
-  parameters = bindrows(
+
     defineParameter(
-      "riparianBuffer_m",
-      "numeric",
-      30,
-      0,
+      "riparianPolicy",
+      "data.frame",
+      NULL,
       NA,
-      "Uniform riparian buffer distance (m) applied to hydrology streams"
+      NA,
+      "Province-based riparian buffer policy (columns: province, buffer_m)"
     ),
     
     defineParameter(
@@ -48,11 +48,6 @@ No data download. No landbase decisions",
       objectClass = "SpatRaster",
       desc        = "Coarse-resolution planning raster supplied by upstream module",
       sourceURL  = NA
-    ),
-    expectsInput(
-      objectName  = "riparianBufferPolicy",
-      objectClass = "data.frame",
-      desc        = "able of jurisdiction buffer width"
     ),
     expectsInput(
       objectName  = "Hydrology_lakes",
@@ -137,13 +132,9 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
- 
-  if (!SpaDES.core::suppliedElsewhere("Policy")){#RiparianBufferPlolicy
-    sim$riparianBufferPolicy <- data.frame(
-      province_code = c("BC","AB","SK","MB","ON","QC","NB","NS","NL","PE"),
-      buffer_m = rep(30, 10),
-      stringsAsFactors = FALSE
-  }
+  # ! ----- EDIT BELOW ----- ! #
+
+  # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
 }
 ## ------------------------------------------------------------------
