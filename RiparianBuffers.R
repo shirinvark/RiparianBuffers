@@ -103,7 +103,8 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("riparianBufferPolicy")) {
     
-    policyFile <- file.path(modulePath(sim), "data", "riparianBufferPolicy.csv")
+    policyFile <- file.path(getwd(), "riparianBufferPolicy.csv")
+    
     
     sim$riparianBufferPolicy <- read.csv(
       policyFile,
