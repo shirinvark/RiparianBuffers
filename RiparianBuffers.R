@@ -21,16 +21,7 @@ No data download. No landbase decisions",
     "terra"
   )
   ,
-
-    defineParameter(
-      "riparianPolicy",
-      "data.frame",
-      NULL,
-      NA,
-      NA,
-      "Province-based riparian buffer policy (columns: province, buffer_m)"
-    ),
-    
+  parameters = bindrows(
     defineParameter(
       "hydroRaster_m",
       "numeric",
@@ -39,7 +30,6 @@ No data download. No landbase decisions",
       NA,
       "Resolution (m) used to compute proportional riparian fraction"
     )
-    
   ),
   inputObjects =  bindrows(
     
@@ -50,15 +40,15 @@ No data download. No landbase decisions",
       sourceURL  = NA
     ),
     expectsInput(
+      objectName  = "riparianBufferPolicy",
+      objectClass = "data.frame",
+      desc        = "Table of jurisdiction buffer width"
+    ),
+    expectsInput(
       objectName  = "Hydrology_lakes",
       objectClass = "SpatVector",
       desc        = "Hydrological lakes and large water bodies supplied upstream"
     ),
-   # expectsInput(
-     # objectName  = "Hydrology_basins",
-      #objectClass = "SpatVector",
-      #desc        = "Hydrological basins supplied upstream"
-    #),
     expectsInput(
       objectName  = "Hydrology_streams",
       objectClass = "SpatVector",
@@ -71,7 +61,7 @@ No data download. No landbase decisions",
       objectName  = "Provinces",
       objectClass = "SpatVector",
       desc        = "Provincial boundaries with province_code"
-    ),
+    )
   ),
   outputObjects =  bindrows(
     createsOutput(
@@ -107,41 +97,21 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
 }
 
 
-## This module does not create or download inputs
-## All spatial dependencies are expected to be
-## supplied by EasternCanadaDataPrep or the user.
+## Spatial dependencies are expected to be supplied upstream;
+## minimal defaults are created to allow standalone execution.
 .inputObjects <- function(sim) {
-  # Any code written here will be run during the simInit for the purpose of creating
-  # any objects required by this module and identified in the inputObjects element of defineModule.
-  # This is useful if there is something required before simulation to produce the module
-  # object dependencies, including such things as downloading default datasets, e.g.,
-  # downloadData("LCC2005", modulePath(sim)).
-  # Nothing should be created here that does not create a named object in inputObjects.
-  # Any other initiation procedures should be put in "init" eventType of the doEvent function.
-  # Note: the module developer can check if an object is 'suppliedElsewhere' to
-  # selectively skip unnecessary steps because the user has provided those inputObjects in the
-  # simInit call, or another module will supply or has supplied it. e.g.,
-  # if (!suppliedElsewhere('defaultColor', sim)) {
-  #   sim$map <- Cache(prepInputs, extractURL('map')) # download, extract, load file from url in sourceURL
-  # }
-  ## NOTE:
-  ## This module expects all inputObjects to be supplied upstream.
-  ## No defaults are created here by design.
   
-  #cacheTags <- c(currentModule(sim), "function:.inputObjects") # uncomment this if Cache is being used
-  dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
-  message(currentModule(sim), ": using dataPath '", dPath, "'.")
-
-  # ! ----- EDIT BELOW ----- ! #
-
-  # ! ----- STOP EDITING ----- ! #
+  if (!SpaDES.core::suppliedElsewhere("riparianBufferPolicy")) {
+    
+    policyFile <- file.path(modulePath(sim), "data", "riparianBufferPolicy.csv")
+    
+    sim$riparianBufferPolicy <- read.csv(
+      policyFile,
+      stringsAsFactors = FALSE
+    )
+  }
+  
   return(invisible(sim))
 }
-## ------------------------------------------------------------------
-## Module philosophy:
-## RiparianBuffers translates hydrological geometry
-## and jurisdictional policy into a continuous spatial signal,
-## without embedding management or landbase assumptions.
-## ------------------------------------------------------------------
 
 
