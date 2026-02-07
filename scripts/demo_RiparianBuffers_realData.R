@@ -188,3 +188,4 @@ hist(
 )
 
 mean(sim$Riparian$riparianFraction[] > 0, na.rm = TRUE)
+
