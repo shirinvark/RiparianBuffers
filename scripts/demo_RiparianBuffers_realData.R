@@ -111,7 +111,7 @@ terra::values(PlanningRaster) <- 1
 ## 6. Provinces (dummy but valid)
 ## ---------------------------------------------------------
 Provinces <- terra::vect(studyArea)
-Provinces$province_code <- "ON"
+Provinces$jurisdiction <- "ON"
 
 ## ---------------------------------------------------------
 ## 7. Streams & Lakes (cropped for smoke test only)

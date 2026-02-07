@@ -1,117 +1,154 @@
 ---
-title: "RiparianBuffers Module"
-author: "RiparianBuffers development team"
+title: "RiparianBuffers"
+author: "Shirin Varkouhi"
+date: "`r Sys.Date()`"
 output:
   html_document:
-    theme: readable
     toc: true
     toc_depth: 2
-    number_sections: true
 ---
+```{r setup, include=TRUE, echo=FALSE, message=FALSE}
+library(SpaDES.core)
+library(SpaDES.project)
+library(terra)
+library(sf)
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Overview
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  echo = FALSE,
-  message = FALSE,
-  warning = FALSE
+This module computes a fractional riparian influence raster (values between 0 and 1)
+from hydrological features and jurisdiction-specific buffer rules.
+
+The module is policy-aware but decision-free:
+it produces a spatial signal only and leaves all regulatory or management interpretation
+to downstream modules.
+
+## Plotting
+
+Nothing.
+
+## Saving
+
+Nothing.
+
+All outputs are stored in memory as part of the simulation object.
+
+## What this module does
+
+- Computes fractional riparian influence (0–1)
+- Uses streams and lakes as hydrological features
+- Supports jurisdiction-specific buffer widths
+- Produces outputs reusable by downstream modules
+
+## What this module does not do
+
+- Does not define harvestable landbase
+- Does not apply regulatory exclusions
+- Does not interpret policy compliance
+- Does not classify forest vs non-forest
+
+## Input data
+
+This module expects the following input objects:
+
+- **PlanningRaster** (`SpatRaster`)  
+  Coarse-resolution planning grid
+
+- **Hydrology_streams** (`SpatVector`)  
+  Stream and river network (e.g. HydroRIVERS)
+
+- **Hydrology_lakes** (`SpatVector`)  
+  Lakes and large water bodies (e.g. HydroLAKES)
+
+- **Provinces** (`SpatVector`)  
+  Jurisdiction boundaries with a `jurisdiction` field
+
+- **riparianBufferPolicy** (`data.frame`)  
+  Table defining buffer widths by jurisdiction and hydrology class
+  
+## Study area
+
+The study area is supplied upstream as spatial input objects
+and is not defined internally in this module.
+
+All hydrological and jurisdictional inputs are expected
+to be pre-cropped and projected consistently
+(e.g. by EasternCanadaDataPrep).
+
+## Buffer policy
+
+Riparian buffer widths are supplied as a data frame.
+
+Example:
+
+```{r policy_example, eval=FALSE}
+data.frame(
+  jurisdiction = c("default", "ON", "QC"),
+  small_stream = c(30, 30, 20),
+  large_stream = c(50, 50, 40),
+  small_lake   = c(30, 30, 20),
+  large_lake   = c(50, 50, 40)
 )
 ```
-Overview
-RiparianBuffers is a SpaDES data-preparation module that computes a fractional riparian influence raster
-(values between 0 and 1) from hydrological features and buffer-distance rules.
-
-The module is policy-aware but decision-free.
-It generates a spatial signal only, without embedding landbase, harvesting, or regulatory assumptions.
-
-Purpose
-Riparian effects are often implemented as:
-
-binary exclusions,
-
-hard masks,
-
-or logic embedded directly in landbase or harvesting modules.
-
-This makes riparian influence opaque and difficult to reuse.
-
-RiparianBuffers separates signal generation from decision-making by producing a continuous riparian influence surface that can be interpreted downstream in multiple ways.
-
-What the module does
-Computes fractional riparian influence (0–1) per planning cell
-
-Supports uniform or province-based buffer distances
-
-Integrates streams and lakes as hydrological features
-
-Preserves sub-cell riparian structure via higher-resolution distance calculations
-
-Produces transparent, reusable outputs for downstream modules
-
-What the module does not do
-Define landbase or effective harvestable area
-
-Apply harvesting, regulatory, or policy exclusions
-
-Classify forest vs. non-forest land
-
-Interpret management intent or policy compliance
-
-All decisions are deferred to downstream modules.
-
-Inputs
-Input object	Class	Description
-PlanningRaster	SpatRaster	Target planning grid
-Hydrology_streams	SpatVector	Stream / river network
-Hydrology_lakes	SpatVector	Lakes and large water bodies
-Provinces	SpatVector	Jurisdiction boundaries with province_code
-All spatial inputs are expected to be prepared, projected, and cropped upstream
-(e.g., by EasternCanadaDataPrep).
-
-Buffer policy
-A single buffering strategy is applied per simulation.
-
-For jurisdiction-specific buffering, the policy is supplied as a data frame:
-
-data.frame(
-  province_code = c("ON", "QC", "NB"),
-  buffer_m      = c(300, 300, 300)
-)
 Buffer distances are applied geometrically only.
 No regulatory interpretation is performed in this module.
 
-Method overview
-Hydrological features (streams and lakes) are rasterized on a high-resolution grid
+---
 
-Distance-to-hydrology is computed at that resolution
+## Example usage
 
-Distance thresholds are applied based on the supplied buffer policy
+```{r module_usage, message=FALSE, eval=FALSE}
+times <- list(start = 0, end = 1)
 
-Binary riparian presence is aggregated to the planning grid
+modules <- list("RiparianBuffers")
 
-Each planning cell receives a fractional riparian influence value (0–1)
+parameters <- list(
+  RiparianBuffers = list(
+    hydroRaster_m = 30
+  )
+)
 
-The computational resolution is controlled by the parameter hydroRaster_m.
+objects <- list(
+  PlanningRaster    = PlanningRaster,
+  Hydrology_streams = Hydrology_streams,
+  Hydrology_lakes   = Hydrology_lakes,
+  Provinces         = Provinces
+)
 
-Outputs
+sim <- simInit(
+  times   = times,
+  modules = modules,
+  params  = parameters,
+  objects = objects
+)
+
+sim <- spades(sim)
+```
+
+
+---
+
+## Output data
+
 The module creates a single output object:
 
-sim$Riparian
-Element	Description
-riparianFraction	Fractional riparian influence (0–1)
-raster_m	Resolution used for distance calculations
-policy	Buffer policy applied
-Interpretation
-0 → no riparian influence
+- **sim$Riparian**
+  - `riparianFraction` – SpatRaster (0–1)
+  - `raster_m` – computation resolution (m)
+  - `policy` – buffer policy table used
 
-1 → fully riparian
+## Interpretation
 
-intermediate values → partial riparian influence
+- 0 indicates no riparian influence
+- 1 indicates full riparian coverage
+- Intermediate values indicate partial influence
 
-Downstream modules decide how (or whether) this signal is used
-(e.g., masking, weighting, exclusion, or reporting).
+Downstream modules determine how this signal is used
+(e.g. masking, weighting, reporting).
+## Anticipated linkages to other modules
 
-Summary
-RiparianBuffers produces a transparent, reproducible, and reusable spatial signal representing riparian influence.
+RiparianBuffers is designed to be used upstream of:
 
-By separating hydrological geometry and buffering rules from management decisions, the module supports flexible downstream use in landbase estimation, harvesting models, habitat analyses, and reporting workflows.
-
+- landbase estimation modules
+- harvesting and AAC modules
+- habitat and biodiversity analyses
