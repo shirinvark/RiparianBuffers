@@ -54,12 +54,13 @@ RiparianInit <- function(sim) {
   bufferRaster <- hydro_template
   terra::values(bufferRaster) <- NA_real_
   
-  prov_vals <- unique(na.omit(terra::values(provRaster)))
+  prov_codes <- unique(sim$Provinces$province_code)
+  prov_codes <- as.character(prov_codes)
   
-  for (p in prov_vals) {
+  for (p in prov_codes) {   # ✅ این خط اصلاح شد
     
     row <- policy[policy$province_code == p, ]
-    if (nrow(row) == 0) {
+    if (nrow(row) < 1) {
       row <- policy[policy$province_code == "default", ]
     }
     
