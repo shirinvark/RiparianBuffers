@@ -10,19 +10,9 @@ RiparianInit <- function(sim) {
   stopifnot(is.data.frame(sim$riparianBufferPolicy))
   
   ## ---------------------------------------------------------
-  ## 1) Riparian policy (from CSV, already loaded)
+  ## 1) Policy (from CSV)
   ## ---------------------------------------------------------
   policy <- sim$riparianBufferPolicy
-  
-  stopifnot(
-    all(c(
-      "province_code",
-      "small_stream",
-      "large_stream",
-      "small_lake",
-      "large_lake"
-    ) %in% names(policy))
-  )
   
   ## ---------------------------------------------------------
   ## 2) Hydro template raster
@@ -35,36 +25,23 @@ RiparianInit <- function(sim) {
   terra::values(hydro_template) <- NA_real_
   
   ## ---------------------------------------------------------
-  ## 3) Classify hydrology (VECTOR LEVEL)
+  ## 3) Classify hydrology
   ## ---------------------------------------------------------
-  
-  ## --- streams ---
   streams <- sim$Hydrology_streams
-  stopifnot("ORD_STRA" %in% names(streams))
-  
   streams$hydro_class <- ifelse(
-    streams$ORD_STRA >= 4,
-    "large_stream",
-    "small_stream"
+    streams$ORD_STRA >= 4, "large_stream", "small_stream"
   )
   sim$Hydrology_streams <- streams
   
-  ## --- lakes ---
   lakes <- sim$Hydrology_lakes
-  stopifnot("Lake_area" %in% names(lakes))
-  
   lakes$hydro_class <- ifelse(
-    lakes$Lake_area >= 1,
-    "large_lake",
-    "small_lake"
+    lakes$Lake_area >= 1, "large_lake", "small_lake"
   )
   sim$Hydrology_lakes <- lakes
   
   ## ---------------------------------------------------------
   ## 4) Province raster
   ## ---------------------------------------------------------
-  stopifnot("province_code" %in% names(sim$Provinces))
-  
   provRaster <- terra::rasterize(
     sim$Provinces,
     hydro_template,
@@ -72,7 +49,7 @@ RiparianInit <- function(sim) {
   )
   
   ## ---------------------------------------------------------
-  ## 5) Build bufferRaster (SIMPLE LOOKUP)
+  ## 5) Build bufferRaster (PARTITIONED)
   ## ---------------------------------------------------------
   bufferRaster <- hydro_template
   terra::values(bufferRaster) <- NA_real_
@@ -82,76 +59,45 @@ RiparianInit <- function(sim) {
   for (p in prov_vals) {
     
     row <- policy[policy$province_code == p, ]
-    
     if (nrow(row) == 0) {
       row <- policy[policy$province_code == "default", ]
     }
     
-    ## 🔹 فعلاً ساده: فقط large_stream
-    ## ---------------------------------------------------------
-    ## 5) Build bufferRaster (PARTITIONED by hydro class)
-    ## ---------------------------------------------------------
+    ## small streams
+    mask <- terra::rasterize(
+      sim$Hydrology_streams[streams$hydro_class == "small_stream", ],
+      hydro_template,
+      touches = TRUE
+    )
+    bufferRaster[provRaster == p & mask == 1] <- as.numeric(row$small_stream)
     
-    bufferRaster <- hydro_template
-    terra::values(bufferRaster) <- NA_real_
+    ## large streams
+    mask <- terra::rasterize(
+      sim$Hydrology_streams[streams$hydro_class == "large_stream", ],
+      hydro_template,
+      touches = TRUE
+    )
+    bufferRaster[provRaster == p & mask == 1] <- as.numeric(row$large_stream)
     
-    prov_vals <- unique(na.omit(terra::values(provRaster)))
+    ## small lakes
+    mask <- terra::rasterize(
+      sim$Hydrology_lakes[lakes$hydro_class == "small_lake", ],
+      hydro_template,
+      touches = TRUE
+    )
+    bufferRaster[provRaster == p & mask == 1] <- as.numeric(row$small_lake)
     
-    for (p in prov_vals) {
-      
-      row <- policy[policy$province_code == p, ]
-      if (nrow(row) == 0) {
-        row <- policy[policy$province_code == "default", ]
-      }
-      
-      ## --- small streams ---
-      buf <- as.numeric(row$small_stream)
-      bufferRaster[
-        provRaster == p &
-          terra::rasterize(
-            sim$Hydrology_streams[sim$Hydrology_streams$hydro_class == "small_stream", ],
-            hydro_template,
-            touches = TRUE
-          ) == 1
-      ] <- buf
-      
-      ## --- large streams ---
-      buf <- as.numeric(row$large_stream)
-      bufferRaster[
-        provRaster == p &
-          terra::rasterize(
-            sim$Hydrology_streams[sim$Hydrology_streams$hydro_class == "large_stream", ],
-            hydro_template,
-            touches = TRUE
-          ) == 1
-      ] <- buf
-      
-      ## --- small lakes ---
-      buf <- as.numeric(row$small_lake)
-      bufferRaster[
-        provRaster == p &
-          terra::rasterize(
-            sim$Hydrology_lakes[sim$Hydrology_lakes$hydro_class == "small_lake", ],
-            hydro_template,
-            touches = TRUE
-          ) == 1
-      ] <- buf
-      
-      ## --- large lakes ---
-      buf <- as.numeric(row$large_lake)
-      bufferRaster[
-        provRaster == p &
-          terra::rasterize(
-            sim$Hydrology_lakes[sim$Hydrology_lakes$hydro_class == "large_lake", ],
-            hydro_template,
-            touches = TRUE
-          ) == 1
-      ] <- buf
-    }
-    
+    ## large lakes
+    mask <- terra::rasterize(
+      sim$Hydrology_lakes[lakes$hydro_class == "large_lake", ],
+      hydro_template,
+      touches = TRUE
+    )
+    bufferRaster[provRaster == p & mask == 1] <- as.numeric(row$large_lake)
+  }
   
   ## ---------------------------------------------------------
-  ## 6) Build riparian fraction raster
+  ## 6) Riparian fraction
   ## ---------------------------------------------------------
   rip_frac <- buildRiparianFraction(
     PlanningRaster = sim$PlanningRaster,
@@ -162,7 +108,7 @@ RiparianInit <- function(sim) {
   )
   
   ## ---------------------------------------------------------
-  ## 7) Save outputs
+  ## 7) Output
   ## ---------------------------------------------------------
   sim$Riparian <- list(
     riparianFraction = rip_frac,
