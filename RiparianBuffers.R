@@ -60,7 +60,7 @@ No data download. No landbase decisions",
     expectsInput(
       objectName  = "Provinces",
       objectClass = "SpatVector",
-      desc        = "Provincial boundaries with province_code"
+      desc        = "Provincial boundaries with jurisdiction"
     )
   ),
   outputObjects =  bindrows(

@@ -15,7 +15,7 @@ RiparianInit <- function(sim) {
   policy <- sim$riparianBufferPolicy
   
   reqCols <- c(
-    "province_code",
+    "jurisdiction",
     "small_stream",
     "large_stream",
     "small_lake",
@@ -40,21 +40,19 @@ RiparianInit <- function(sim) {
   streams$hydro_class <- ifelse(
     streams$ORD_STRA >= 4, "large_stream", "small_stream"
   )
-  sim$Hydrology_streams <- streams
   
   lakes <- sim$Hydrology_lakes
   lakes$hydro_class <- ifelse(
     lakes$Lake_area >= 1, "large_lake", "small_lake"
   )
-  sim$Hydrology_lakes <- lakes
   
   ## ---------------------------------------------------------
-  ## 4) Province raster
+  ## 4) Jurisdiction raster
   ## ---------------------------------------------------------
-  provRaster <- terra::rasterize(
+  jurisRaster <- terra::rasterize(
     sim$Provinces,
     hydro_template,
-    field = "province_code"
+    field = "jurisdiction"
   )
   
   ## ---------------------------------------------------------
@@ -63,19 +61,17 @@ RiparianInit <- function(sim) {
   bufferRaster <- hydro_template
   terra::values(bufferRaster) <- NA_real_
   
-  prov_codes <- unique(na.omit(sim$Provinces$province_code))
-  prov_codes <- as.character(prov_codes)
+  juris_codes <- unique(na.omit(sim$Provinces$jurisdiction))
+  juris_codes <- as.character(juris_codes)
   
-  for (p in prov_codes) {
+  for (j in juris_codes) {
     
-    row <- policy[policy$province_code == p, ]
-    
+    row <- policy[policy$jurisdiction == j, ]
     if (nrow(row) == 0) {
-      row <- policy[policy$province_code == "default", ]
+      row <- policy[policy$jurisdiction == "default", ]
     }
-    
     if (nrow(row) == 0) {
-      stop(paste("No riparian policy for province:", p))
+      stop(paste("No riparian policy for jurisdiction:", j))
     }
     
     ## small streams
@@ -84,7 +80,7 @@ RiparianInit <- function(sim) {
       hydro_template,
       touches = TRUE
     )
-    bufferRaster[provRaster == p & mask == 1] <- row$small_stream
+    bufferRaster[jurisRaster == j & mask == 1] <- row$small_stream
     
     ## large streams
     mask <- terra::rasterize(
@@ -92,7 +88,7 @@ RiparianInit <- function(sim) {
       hydro_template,
       touches = TRUE
     )
-    bufferRaster[provRaster == p & mask == 1] <- row$large_stream
+    bufferRaster[jurisRaster == j & mask == 1] <- row$large_stream
     
     ## small lakes
     mask <- terra::rasterize(
@@ -100,7 +96,7 @@ RiparianInit <- function(sim) {
       hydro_template,
       touches = TRUE
     )
-    bufferRaster[provRaster == p & mask == 1] <- row$small_lake
+    bufferRaster[jurisRaster == j & mask == 1] <- row$small_lake
     
     ## large lakes
     mask <- terra::rasterize(
@@ -108,7 +104,7 @@ RiparianInit <- function(sim) {
       hydro_template,
       touches = TRUE
     )
-    bufferRaster[provRaster == p & mask == 1] <- row$large_lake
+    bufferRaster[jurisRaster == j & mask == 1] <- row$large_lake
   }
   
   ## ---------------------------------------------------------
