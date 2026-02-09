@@ -136,7 +136,7 @@ sim <- simInit(
   modules = "RiparianBuffers",
   objects = list(
     PlanningRaster    = PlanningRaster,
-    Provinces         = Provinces,
+    jurisdiction      = Provinces,   # 👈 rename فقط این
     Hydrology_streams = streams,
     Hydrology_lakes   = lakes
   ),

@@ -4,10 +4,16 @@ RiparianInit <- function(sim) {
   ## 0) CHECK inputs
   ## ---------------------------------------------------------
   stopifnot(inherits(sim$PlanningRaster, "SpatRaster"))
-  stopifnot(inherits(sim$Provinces, "SpatVector"))
+  stopifnot(inherits(sim$jurisdiction, "SpatVector"))
   stopifnot(inherits(sim$Hydrology_streams, "SpatVector"))
   stopifnot(inherits(sim$Hydrology_lakes, "SpatVector"))
   stopifnot(is.data.frame(sim$riparianBufferPolicy))
+  ## ---------------------------------------------------------
+  ## 0b) CHECK jurisdiction attributes
+  ## ---------------------------------------------------------
+  if (!"jurisdiction" %in% names(sim$jurisdiction)) {
+    stop("sim$jurisdiction must contain a 'jurisdiction' attribute")
+  }
   
   ## ---------------------------------------------------------
   ## 1) Policy
@@ -50,10 +56,11 @@ RiparianInit <- function(sim) {
   ## 4) Jurisdiction raster
   ## ---------------------------------------------------------
   jurisRaster <- terra::rasterize(
-    sim$Provinces,
+    sim$jurisdiction,
     hydro_template,
     field = "jurisdiction"
   )
+  
   
   ## ---------------------------------------------------------
   ## 5) Build bufferRaster
@@ -61,7 +68,7 @@ RiparianInit <- function(sim) {
   bufferRaster <- hydro_template
   terra::values(bufferRaster) <- NA_real_
   
-  juris_codes <- unique(na.omit(sim$Provinces$jurisdiction))
+  juris_codes <- unique(na.omit(sim$jurisdiction$jurisdiction))
   juris_codes <- as.character(juris_codes)
   
   for (j in juris_codes) {

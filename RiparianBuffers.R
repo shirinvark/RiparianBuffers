@@ -58,9 +58,9 @@ No data download. No landbase decisions",
     ## and are used ONLY to spatially apply province-specific
     ## riparian buffer policies (no landbase decisions here).
     expectsInput(
-      objectName  = "Provinces",
+      objectName  = "jurisdiction",
       objectClass = "SpatVector",
-      desc        = "Provincial boundaries with jurisdiction"
+      desc        = "jurisdictional boundaries with jurisdiction"
     )
   ),
   outputObjects =  bindrows(
@@ -103,11 +103,14 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("riparianBufferPolicy")) {
     
-    policyFile <- system.file(
+    policyFile <- file.path(
+      modulePath(sim),
+      currentModule(sim),
       "data",
-      "riparianBufferPolicy.csv",
-      package = currentModule(sim)
+      "riparianBufferPolicy.csv"
     )
+    
+    stopifnot(file.exists(policyFile))
     
     sim$riparianBufferPolicy <- read.csv(
       policyFile,
@@ -115,7 +118,8 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
     )
   }
   
-  return(invisible(sim))
+  invisible(sim)
 }
+
 
 
