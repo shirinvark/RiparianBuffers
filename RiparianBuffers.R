@@ -97,7 +97,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
 }
 
 
-## Spatial dependencies are expected to be supplied upstream;
+## Spatial dependencies are expected to be supplied upstream
 ## minimal defaults are created to allow standalone execution.
 .inputObjects <- function(sim) {
   

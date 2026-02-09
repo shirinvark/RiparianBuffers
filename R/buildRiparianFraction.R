@@ -17,7 +17,7 @@ buildRiparianFraction <- function(
 ) {
   ## Enforce a single buffering strategy:
   ## either uniform (riparianBuffer_m) OR
-  ## spatially variable (bufferRaster), but never both.
+  ## spatially variable (bufferRaster), but never both
   # --- sanity check ---
   if (is.null(streams)) {
     stop("Hydrology_streams is missing. Supply streams upstream before RiparianBuffers. Run EasternCanadaDataPrep before RiparianBuffers

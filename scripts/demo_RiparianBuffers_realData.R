@@ -162,7 +162,11 @@ sim <- spades(sim)
 ## ---------------------------------------------------------
 ## 10. Checks
 ## ---------------------------------------------------------
-sim$Riparian
+names(sim$Riparian)
+summary(values(sim$Riparian$riparianFraction))
+x <- values(sim$Riparian$riparianFraction)
+summary(x[x > 0])
+mean(sim$Riparian$riparianFraction[] > 0, na.rm = TRUE)
 
 x11()
 plot(
