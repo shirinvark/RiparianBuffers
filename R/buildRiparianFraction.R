@@ -8,7 +8,7 @@
 ## Designed to be policy-agnostic and reusable
 ## across different regulatory or ecological contexts.
 buildRiparianFraction <- function(
-    PlanningRaster,
+    PlanningGrid_250m,
     streams,
     lakes = NULL,
     riparianBuffer_m = NULL,   # buffer  
@@ -37,14 +37,14 @@ buildRiparianFraction <- function(
   }
   
   # --- CRS consistency ---
-  if (!terra::same.crs(streams, PlanningRaster)) {
-    streams <- terra::project(streams, PlanningRaster)
+  if (!terra::same.crs(streams, PlanningGrid_250m)) {
+    streams <- terra::project(streams, PlanningGrid_250m)
   }
   # high-resolution template (shared)
   hydro_template <- terra::rast(
-    ext = terra::ext(PlanningRaster),
+    ext = terra::ext(PlanningGrid_250m),
     resolution = hydroRaster_m,
-    crs = terra::crs(PlanningRaster)
+    crs = terra::crs(PlanningGrid_250m)
   )
   terra::values(hydro_template) <- NA_real_
   
@@ -53,12 +53,12 @@ buildRiparianFraction <- function(
   ## Internal high-resolution raster used to compute
   ## proportional riparian influence.
   ##
-  ## Resolution may differ from PlanningRaster to
+  ## Resolution may differ from PlanningGrid_250m to
   ## better capture narrow hydrological features.
   ## Performance note:
   ## hydroRaster_m controls the trade-off between
   ## spatial accuracy and computational cost.
-  ## This is intentionally decoupled from PlanningRaster
+  ## This is intentionally decoupled from PlanningGrid_250m
   # =========================================================
   # CASE 1: UNIFORM BUFFER 
   # =========================================================
@@ -94,8 +94,8 @@ buildRiparianFraction <- function(
   )
   
   if (!is.null(lakes)) {
-    if (!terra::same.crs(lakes, PlanningRaster)) {
-      lakes <- terra::project(lakes, PlanningRaster)
+    if (!terra::same.crs(lakes, PlanningGrid_250m)) {
+      lakes <- terra::project(lakes, PlanningGrid_250m)
     }
     
     lakes_r <- terra::rasterize(
@@ -129,7 +129,7 @@ buildRiparianFraction <- function(
   # logical → numeric {0,1}
   rip_hi <- cond * 1
   
-  fact <- round(res(PlanningRaster)[1] / hydroRaster_m)
+  fact <- round(res(PlanningGrid_250m)[1] / hydroRaster_m)
   fact <- max(1, fact)
   
   riparian_fraction <- terra::aggregate(
@@ -141,7 +141,7 @@ buildRiparianFraction <- function(
   
   riparian_fraction <- terra::resample(
     riparian_fraction,
-    PlanningRaster,
+    PlanningGrid_250m,
     method = "near"
   )
   

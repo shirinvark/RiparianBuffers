@@ -98,14 +98,14 @@ studyArea <- terra::ext(streams_all[1:50, ]) |>
 studyArea_v <- terra::vect(studyArea)
 
 ## ---------------------------------------------------------
-## 5. Planning raster (coarse)
+## 5. PlanningGrid_250m
 ## ---------------------------------------------------------
-PlanningRaster <- terra::rast(
+PlanningGrid_250m <- terra::rast(
   studyArea_v,
   resolution = 250,
   crs = "EPSG:3857"
 )
-terra::values(PlanningRaster) <- 1
+terra::values(PlanningGrid_250m) <- 1
 
 ## ---------------------------------------------------------
 ## 6. Provinces (dummy but valid)
@@ -135,7 +135,7 @@ sim <- simInit(
   times   = list(start = 0, end = 1),
   modules = "RiparianBuffers",
   objects = list(
-    PlanningRaster    = PlanningRaster,
+    PlanningGrid_250m    = PlanningGrid_250m,
     jurisdiction      = Provinces,   # 👈 rename فقط این
     Hydrology_streams = streams,
     Hydrology_lakes   = lakes

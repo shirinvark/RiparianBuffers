@@ -3,7 +3,7 @@ RiparianInit <- function(sim) {
   ## ---------------------------------------------------------
   ## 0) CHECK inputs
   ## ---------------------------------------------------------
-  stopifnot(inherits(sim$PlanningRaster, "SpatRaster"))
+  stopifnot(inherits(sim$PlanningGrid_250m, "SpatRaster"))
   stopifnot(inherits(sim$jurisdiction, "SpatVector"))
   stopifnot(inherits(sim$Hydrology_streams, "SpatVector"))
   stopifnot(inherits(sim$Hydrology_lakes, "SpatVector"))
@@ -33,9 +33,9 @@ RiparianInit <- function(sim) {
   ## 2) Hydro template
   ## ---------------------------------------------------------
   hydro_template <- terra::rast(
-    ext        = terra::ext(sim$PlanningRaster),
+    ext        = terra::ext(sim$PlanningGrid_250m),
     resolution = P(sim)$hydroRaster_m,
-    crs        = terra::crs(sim$PlanningRaster)
+    crs        = terra::crs(sim$PlanningGrid_250m)
   )
   terra::values(hydro_template) <- NA_real_
   
@@ -118,7 +118,7 @@ RiparianInit <- function(sim) {
   ## 6) Riparian fraction
   ## ---------------------------------------------------------
   rip_frac <- buildRiparianFraction(
-    PlanningRaster = sim$PlanningRaster,
+    PlanningGrid_250m = sim$PlanningGrid_250m,
     streams        = streams,
     lakes          = lakes,
     bufferRaster   = bufferRaster,

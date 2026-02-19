@@ -34,9 +34,9 @@ No data download. No landbase decisions",
   inputObjects =  bindrows(
     
     expectsInput(
-      objectName  = "PlanningRaster",
+      objectName  = "PlanningGrid_250m",
       objectClass = "SpatRaster",
-      desc        = "Coarse-resolution planning raster supplied by upstream module",
+      desc        = "Coarse-resolution PlanningGrid_250m supplied by upstream module",
       sourceURL  = NA
     ),
     expectsInput(
