@@ -136,3 +136,13 @@ RiparianInit <- function(sim) {
   
   invisible(sim)
 }
+
+
+
+
+
+
+
+
+
+sim <- buildProvinces(sim)

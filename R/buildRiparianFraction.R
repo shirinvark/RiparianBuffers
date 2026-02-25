@@ -13,15 +13,14 @@ buildRiparianFraction <- function(
     lakes = NULL,
     riparianBuffer_m = NULL,   # buffer  
     bufferRaster     = NULL,   # buffer 
-    hydroRaster_m    = 30
+    hydroRaster_m    = 25
 ) {
   ## Enforce a single buffering strategy:
   ## either uniform (riparianBuffer_m) OR
   ## spatially variable (bufferRaster), but never both
   # --- sanity check ---
   if (is.null(streams)) {
-    stop("Hydrology_streams is missing. Supply streams upstream before RiparianBuffers. Run EasternCanadaDataPrep before RiparianBuffers
-.")
+    stop("streams (Hydrology_streams) must be provided to buildRiparianFraction.")
   }
   
   if (!inherits(streams, "SpatVector")) {
@@ -31,7 +30,9 @@ buildRiparianFraction <- function(
   if (is.null(riparianBuffer_m) && is.null(bufferRaster)) {
     stop("Either riparianBuffer_m or bufferRaster must be provided.")
   }
-  
+  if (!is.null(bufferRaster) && !inherits(bufferRaster, "SpatRaster")) {
+    stop("bufferRaster must be a SpatRaster.")
+  }
   if (!is.null(riparianBuffer_m) && !is.null(bufferRaster)) {
     stop("Provide only one of riparianBuffer_m or bufferRaster, not both.")
   }
@@ -39,6 +40,10 @@ buildRiparianFraction <- function(
   # --- CRS consistency ---
   if (!terra::same.crs(streams, PlanningGrid_250m)) {
     streams <- terra::project(streams, PlanningGrid_250m)
+  }
+  if (!is.null(bufferRaster) && 
+      !terra::same.crs(bufferRaster, PlanningGrid_250m)) {
+    bufferRaster <- terra::project(bufferRaster, PlanningGrid_250m)
   }
   # high-resolution template (shared)
   hydro_template <- terra::rast(
@@ -71,12 +76,29 @@ buildRiparianFraction <- function(
     
     streams_buf <- terra::buffer(streams, width = riparianBuffer_m)
     
-    riparian_fraction <- terra::rasterize(
+    rip_hi <- terra::rasterize(
       streams_buf,
       hydro_template,
       cover = TRUE,
       background = 0
     )
+    
+    fact <- max(1, round(res(PlanningGrid_250m)[1] / hydroRaster_m))
+    
+    riparian_fraction <- terra::aggregate(
+      rip_hi,
+      fact = fact,
+      fun  = "mean",
+      na.rm = TRUE
+    )
+    
+    riparian_fraction <- terra::resample(
+      riparian_fraction,
+      PlanningGrid_250m,
+      method = "near"
+    )
+    
+    riparian_fraction[is.na(riparian_fraction)] <- 0
     
     return(riparian_fraction)
   }
@@ -107,16 +129,19 @@ buildRiparianFraction <- function(
     
     hydro_r <- terra::cover(hydro_r, lakes_r)
   }
-  
   dist_r <- terra::distance(hydro_r)
+  max_dist <- terra::global(bufferRaster, "max", na.rm = TRUE)[1,1]
   
-  max_dist <- max(values(bufferRaster), na.rm = TRUE)
+  if (!is.finite(max_dist)) {
+    stop("bufferRaster contains no valid buffer distances.")
+  }
+  
+  dist_r[is.na(bufferRaster)] <- NA
   dist_r[dist_r > max_dist] <- NA
   
   ## --- CHECK alignment ---
   stopifnot(
-    terra::ext(dist_r) == terra::ext(bufferRaster),
-    all(terra::res(dist_r) == terra::res(bufferRaster))
+    terra::compareGeom(dist_r, bufferRaster, stopOnError = FALSE)
   )
   
   ## ---- SAFE riparian mask (NO ifel) ----
@@ -129,8 +154,7 @@ buildRiparianFraction <- function(
   # logical → numeric {0,1}
   rip_hi <- cond * 1
   
-  fact <- round(res(PlanningGrid_250m)[1] / hydroRaster_m)
-  fact <- max(1, fact)
+  fact <- max(1, round(res(PlanningGrid_250m)[1] / hydroRaster_m))
   
   riparian_fraction <- terra::aggregate(
     rip_hi,
