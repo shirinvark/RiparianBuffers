@@ -98,57 +98,6 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   invisible(sim)
 }
 
-buildjurisdiction <- function(sim) {
-  
-  message("🔵 Building jurisdiction layer...")
-  
-  ## 1) jurisdictionial boundaries
-  prov <- rnaturalearth::ne_states(
-    country = "Canada",
-    returnclass = "sf"
-  )
-  
-  ## 2) Only eastern jurisdiction
-  prov <- prov[prov$name_en %in% c(
-    "Ontario",
-    "Quebec",
-    "New Brunswick",
-    "Nova Scotia",
-    "Prince Edward Island",
-    "Newfoundland and Labrador"
-  ), ]
-  
-  ## 3) jurisdiction codes (jurisdiction)
-  ## Explicit short codes for downstream policy joins
-  prov$jurisdiction <- ifelse(prov$name_en == "Ontario", "ON",
-                              ifelse(prov$name_en == "Quebec", "QC",
-                                     ifelse(prov$name_en == "New Brunswick", "NB",
-                                            ifelse(prov$name_en == "Nova Scotia", "NS",
-                                                   ifelse(prov$name_en == "Prince Edward Island", "PE",
-                                                          ifelse(prov$name_en == "Newfoundland and Labrador", "NL", NA))))))  
-  ## 4) Reproject to study area CRS
-  prov <- sf::st_transform(prov, sf::st_crs(sim$studyArea))
-  
-  ## 5) Clip to study area
-  prov <- sf::st_intersection(prov, sim$studyArea)
-  
-  ## 6) Keep only required attribute(s) BEFORE conversio
-  prov <- prov[, "jurisdiction", drop = FALSE]
-  
-  ## 7) Convert to SpatVector (SpaDES standard)
-  sim$jurisdiction<- terra::vect(prov)
-  
-  # jurisdiction are a data source;
-  # jurisdiction is the abstract policy interface exposed downstream
-
-  ## 8) Message (FIXED)
-  message(
-    "✔ jurisdiction ready: ",
-    paste(unique(sim$jurisdiction$jurisdiction), collapse = ", ")
-  )
-  
-  return(invisible(sim))
-}
 
 ## Spatial dependencies are expected to be supplied upstream
 ## minimal defaults are created to allow standalone execution.

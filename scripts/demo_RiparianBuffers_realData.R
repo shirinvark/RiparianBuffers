@@ -43,11 +43,10 @@ getModule(
 ## ---------------------------------------------------------
 ## 3. Create SMALL study area (simple square)
 ## ---------------------------------------------------------
-studyArea_v <- terra::as.polygons(
-  terra::ext(-75, -74.5, 45, 45.5),
-  crs = "EPSG:4326"
-)
+ext_obj <- terra::ext(-75, -74.5, 45, 45.5)
 
+studyArea_v <- terra::rast(ext_obj, resolution = 0.01, crs = "EPSG:4326")
+studyArea_v <- terra::as.polygons(studyArea_v)
 studyArea_v <- terra::project(studyArea_v, "EPSG:3857")
 
 ## ---------------------------------------------------------
