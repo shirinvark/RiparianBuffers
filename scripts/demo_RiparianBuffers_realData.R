@@ -1,6 +1,6 @@
 ############################################################
-## Smoke test for RiparianBuffers module (with HydroLAKES)
-###########################################################
+## Minimal Smoke Test for RiparianBuffers (NEW ARCHITECTURE)
+############################################################
 
 .rs.restartR()
 
@@ -11,7 +11,7 @@ library(SpaDES.core)
 library(SpaDES.project)
 library(terra)
 library(sf)
-library(dplyr)
+
 ## ---------------------------------------------------------
 ## 1. Paths
 ## ---------------------------------------------------------
@@ -41,104 +41,35 @@ getModule(
 )
 
 ## ---------------------------------------------------------
-## 3. Load HydroRIVERS (REAL data)
+## 3. Create SMALL study area (simple square)
 ## ---------------------------------------------------------
-rivers_zip <- "D:/HydroRIVERS_v10_na_shp (3).zip"
-rivers_dir <- "D:/HydroRIVERS"
-
-if (!dir.exists(rivers_dir)) {
-  unzip(rivers_zip, exdir = rivers_dir)
-}
-
-river_shp <- list.files(
-  rivers_dir,
-  pattern = "\\.shp$",
-  recursive = TRUE,
-  full.names = TRUE
+studyArea_v <- terra::as.polygons(
+  terra::ext(-75, -74.5, 45, 45.5),
+  crs = "EPSG:4326"
 )
 
-stopifnot(length(river_shp) == 1)
-
-streams_all <- terra::vect(river_shp)
-streams_all <- terra::project(streams_all, "EPSG:3857")
-
-stopifnot(nrow(streams_all) > 0)
+studyArea_v <- terra::project(studyArea_v, "EPSG:3857")
 
 ## ---------------------------------------------------------
-## 3b. Load HydroLAKES (REAL data)
-## ---------------------------------------------------------
-lakes_zip <- "D:/HydroLAKES_polys_v10_shp.zip"
-lakes_dir <- "D:/HydroLAKES"
-
-if (!dir.exists(lakes_dir)) {
-  unzip(lakes_zip, exdir = lakes_dir)
-}
-
-lake_shp <- list.files(
-  lakes_dir,
-  pattern = "\\.shp$",
-  recursive = TRUE,
-  full.names = TRUE
-)
-
-stopifnot(length(lake_shp) == 1)
-
-lakes_all <- terra::vect(lake_shp)
-lakes_all <- terra::project(lakes_all, "EPSG:3857")
-
-stopifnot(nrow(lakes_all) > 0)
-
-## ---------------------------------------------------------
-## 4. Small study area (from first rivers)
-## ---------------------------------------------------------
-studyArea <- terra::ext(streams_all[1:50, ]) |>
-  terra::as.polygons(crs = "EPSG:3857") |>
-  sf::st_as_sf()
-
-studyArea_v <- terra::vect(studyArea)
-
-## ---------------------------------------------------------
-## 5. PlanningGrid_250m
+## 4. Create PlanningGrid_250m
 ## ---------------------------------------------------------
 PlanningGrid_250m <- terra::rast(
   studyArea_v,
   resolution = 250,
-  crs = "EPSG:3857"
+  crs = terra::crs(studyArea_v)
 )
+
 terra::values(PlanningGrid_250m) <- 1
 
 ## ---------------------------------------------------------
-## 6. Provinces (dummy but valid)
-## ---------------------------------------------------------
-Provinces <- terra::vect(studyArea)
-Provinces$jurisdiction <- "ON"
-
-## ---------------------------------------------------------
-## 7. Streams & Lakes (cropped for smoke test only)
-## ---------------------------------------------------------
-streams <- terra::crop(streams_all, studyArea_v)
-stopifnot(nrow(streams) > 0)
-
-lakes <- terra::crop(lakes_all, studyArea_v)
-
-## if no lakes in this small area, create a dummy lake
-if (nrow(lakes) == 0) {
-  message("No HydroLAKES in study area; creating dummy lake for smoke test.")
-  lakes <- terra::buffer(streams[1], width = 300)
-  lakes <- terra::as.polygons(lakes)
-}
-
-## ---------------------------------------------------------
-## 8. simInit
+## 5. simInit
 ## ---------------------------------------------------------
 sim <- simInit(
   times   = list(start = 0, end = 1),
   modules = "RiparianBuffers",
   objects = list(
-    PlanningGrid_250m    = PlanningGrid_250m,
-    jurisdiction      = Provinces,   # 👈 rename فقط این
-    Hydrology_streams = streams,
-    Hydrology_lakes   = lakes
+    studyArea         = studyArea_v,
+    PlanningGrid_250m = PlanningGrid_250m
   ),
   params = list(
     RiparianBuffers = list(
@@ -147,49 +78,26 @@ sim <- simInit(
   ),
   options = list(
     spades.checkpoint = FALSE,
-    spades.progress   = FALSE,
+    spades.progress   = TRUE,
     spades.save       = FALSE
   )
 )
 
-ls(sim)
-
 ## ---------------------------------------------------------
-## 9. Run
+## 6. Run
 ## ---------------------------------------------------------
 sim <- spades(sim)
 
 ## ---------------------------------------------------------
-## 10. Checks
+## 7. Checks
 ## ---------------------------------------------------------
 names(sim$Riparian)
+
 summary(values(sim$Riparian$riparianFraction))
-x <- values(sim$Riparian$riparianFraction)
-summary(x[x > 0])
+
 mean(sim$Riparian$riparianFraction[] > 0, na.rm = TRUE)
 
-x11()
 plot(
   sim$Riparian$riparianFraction,
-  main = "Riparian fraction (0–1)",
-  col = hcl.colors(20, "YlGnBu")
+  main = "Riparian fraction (0–1)"
 )
-plot(lakes, add = TRUE, border = "red", lwd = 2)
-
-hist(
-  values(sim$Riparian$riparianFraction),
-  breaks = 50,
-  main = "Distribution of riparian fraction",
-  xlab = "Riparian fraction"
-)
-
-x <- values(sim$Riparian$riparianFraction)
-hist(
-  x[x > 0],
-  breaks = 30,
-  main = "Riparian fraction (non-zero only)",
-  xlab = "fraction"
-)
-
-mean(sim$Riparian$riparianFraction[] > 0, na.rm = TRUE)
-

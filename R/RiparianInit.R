@@ -145,4 +145,4 @@ RiparianInit <- function(sim) {
 
 
 
-sim <- buildProvinces(sim)
+sim <- buildjurisdiction(sim)
