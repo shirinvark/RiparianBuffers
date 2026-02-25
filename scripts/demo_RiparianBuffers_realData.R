@@ -2,7 +2,7 @@
 ## Minimal Smoke Test for RiparianBuffers (NEW ARCHITECTURE)
 ############################################################
 
-.rs.restartR()
+#.rs.restartR()
 
 rm(list = ls())
 gc()
