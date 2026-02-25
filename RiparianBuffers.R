@@ -35,19 +35,40 @@ defineModule(sim, list(
       "Resolution (m) used to compute proportional riparian fraction"
     )
   ),
-  inputObjects =  bindrows(
+  inputObjects = bindrows(
+    
+    expectsInput(
+      objectName  = "studyArea",
+      objectClass = c("SpatVector", "sf"),
+      desc        = "Study area polygon used to crop spatial inputs",
+      sourceURL   = NA
+    ),
     
     expectsInput(
       objectName  = "PlanningGrid_250m",
       objectClass = "SpatRaster",
       desc        = "Coarse-resolution PlanningGrid_250m supplied by upstream module",
-      sourceURL  = NA
+      sourceURL   = NA
     ),
+    
     expectsInput(
       objectName  = "riparianBufferPolicy",
       objectClass = "data.frame",
       desc        = "Table of jurisdiction buffer width"
+    ),
+    
+    expectsInput(
+      objectName  = "Hydrology_streams",
+      objectClass = "SpatVector",
+      desc        = "Optional upstream hydrology streams (if provided)"
+    ),
+    
+    expectsInput(
+      objectName  = "Hydrology_lakes",
+      objectClass = "SpatVector",
+      desc        = "Optional upstream hydrology lakes (if provided)"
     )
+    
   ),
   outputObjects =  bindrows(
     createsOutput(
