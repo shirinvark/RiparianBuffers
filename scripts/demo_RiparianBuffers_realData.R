@@ -43,11 +43,25 @@ getModule(
 ## ---------------------------------------------------------
 ## 3. Create SMALL study area (simple square)
 ## ---------------------------------------------------------
-ext_obj <- terra::ext(-75, -74.5, 45, 45.5)
+library(sf)
+library(terra)
 
-studyArea_v <- terra::rast(ext_obj, resolution = 0.01, crs = "EPSG:4326")
-studyArea_v <- terra::as.polygons(studyArea_v)
-studyArea_v <- terra::project(studyArea_v, "EPSG:3857")
+# Read real FMU boundary
+studyArea_sf <- sf::st_read(
+  "E:/EasternCanadaDataPrep/BOUNDARIES/Sudbury_FMU_5070.shp",
+  quiet = TRUE
+)
+
+studyArea_sf <- sf::st_make_valid(studyArea_sf)
+
+# اطمینان از CRS
+sf::st_crs(studyArea_sf)
+
+# تبدیل به terra SpatVector (پیشنهادی برای هماهنگی کامل با ماژول)
+studyArea_v <- terra::vect(studyArea_sf)
+
+# چک نهایی
+terra::crs(studyArea_v)
 
 ## ---------------------------------------------------------
 ## 4. Create PlanningGrid_250m
@@ -81,7 +95,8 @@ sim <- simInit(
     spades.save       = FALSE
   )
 )
-
+terra::crs(studyArea_v)
+terra::crs(PlanningGrid_250m)
 ## ---------------------------------------------------------
 ## 6. Run
 ## ---------------------------------------------------------

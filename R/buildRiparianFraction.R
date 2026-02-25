@@ -3,7 +3,7 @@
 ## Two mutually exclusive modes are supported:
 ## 1) Uniform buffer distance applied everywhere (riparianBuffer_m)
 ## 2) Spatially variable buffer distances supplied as a raster (bufferRaster),
-##    typically derived from jurisdiction-specific policy.
+##    typically derived from jurisdiction-specific policy
 ## Core riparian influence engine
 ## Designed to be policy-agnostic and reusable
 ## across different regulatory or ecological contexts.

@@ -100,7 +100,7 @@ defineModule(sim, list(
 ## Main event for RiparianBuffers.
 ## Translates jurisdiction-specific riparian policy
 ## into a spatially explicit buffer raster, then
-## computes proportional riparian influence.
+## computes proportional riparian influence
 
 doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   switch(
