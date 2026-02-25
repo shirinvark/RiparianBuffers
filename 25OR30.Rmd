@@ -1,0 +1,76 @@
+---
+title: "Technical Note: Effect of Internal Hydrological Resolution (25m vs 30m)"
+author: "Shirin Varkouhi"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    theme: cosmo
+---
+
+# 1. Objective
+
+This analysis evaluates whether using a 25 m internal hydrological raster resolution provides a meaningful improvement over 30 m within the *RiparianBuffers* module, at the 250 m planning grid scale.
+
+All spatial inputs were kept identical. Only the internal resolution parameter (`hydroRaster_m`) was changed.
+
+---
+
+# 2. Cell-Level Comparison
+
+| Metric | Value |
+|--------|-------|
+| Mean absolute difference | 0.00191 |
+| Maximum difference | 0.71375 |
+| % of cells with >1% difference | 1.44% |
+| Mean riparian (30 m) | 0.00636 |
+| Mean riparian (25 m) | 0.00615 |
+
+**Interpretation**
+
+- The mean absolute cell-level difference is extremely small.
+- Over 98% of cells differ by less than 1%.
+- Spatial patterns are highly similar between resolutions.
+
+---
+
+# 3. Total Riparian Area Comparison
+
+| Resolution | Total Riparian Area (ha) |
+|------------|--------------------------|
+| 30 m | 25,149 ha |
+| 25 m | 24,335 ha |
+
+**Percent difference:** 3.24%
+
+---
+
+# 4. Spatial Pattern Assessment
+
+Differences are primarily confined to buffer boundaries.  
+No large-scale structural changes in riparian distribution were observed.
+
+---
+
+# 5. Discussion
+
+Key findings:
+
+- Cell-level differences are negligible.
+- Only a small proportion of cells show meaningful deviation.
+- Aggregate riparian area differs by approximately 3%.
+- 30 m resolution aligns with common North American land cover datasets (e.g., LCC 30 m).
+- 25 m resolution increases computational cost (~44% more fine-resolution cells).
+
+At the 250 m aggregation scale, both internal resolutions produce functionally equivalent spatial outputs.
+
+---
+
+# 6. Conclusion
+
+Changing the internal hydrological raster resolution from 30 m to 25 m does not produce substantial improvements in spatial accuracy at the 250 m planning scale.
+
+Given computational efficiency and consistency with 30 m land cover products, the 30 m resolution is technically sufficient and operationally justified.
+
+---

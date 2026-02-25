@@ -1,0 +1,519 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Riparian Resolution Comparison (25m vs 30m)},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Riparian Resolution Comparison (25m vs 30m)}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(SpaDES.core)}
+\FunctionTok{library}\NormalTok{(SpaDES.project)}
+\FunctionTok{library}\NormalTok{(terra)}
+\FunctionTok{library}\NormalTok{(sf)}
+\FunctionTok{library}\NormalTok{(dplyr)}
+
+\NormalTok{root }\OtherTok{\textless{}{-}} \StringTok{"E:/RiparianBuffers"}
+
+\FunctionTok{setPaths}\NormalTok{(}
+  \AttributeTok{modulePath  =} \FunctionTok{file.path}\NormalTok{(root, }\StringTok{"modules"}\NormalTok{),}
+  \AttributeTok{inputPath   =} \FunctionTok{file.path}\NormalTok{(root, }\StringTok{"inputs"}\NormalTok{),}
+  \AttributeTok{outputPath  =} \FunctionTok{file.path}\NormalTok{(root, }\StringTok{"outputs"}\NormalTok{),}
+  \AttributeTok{cachePath   =} \FunctionTok{file.path}\NormalTok{(root, }\StringTok{"cache"}\NormalTok{),}
+  \AttributeTok{scratchPath =} \FunctionTok{file.path}\NormalTok{(root, }\StringTok{"scratch"}\NormalTok{)}
+\NormalTok{)}
+
+\FunctionTok{getModule}\NormalTok{(}
+  \StringTok{"shirinvark/RiparianBuffers"}\NormalTok{,}
+  \AttributeTok{modulePath =} \FunctionTok{getPaths}\NormalTok{()}\SpecialCharTok{$}\NormalTok{modulePath,}
+  \AttributeTok{overwrite  =} \ConstantTok{TRUE}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $success
+## [1] "shirinvark/RiparianBuffers@HEAD"
+## 
+## $failed
+## character(0)
+\end{verbatim}
+
+\section{Data Preparation}\label{data-preparation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{rivers\_zip }\OtherTok{\textless{}{-}} \StringTok{"D:/HydroRIVERS\_v10\_na\_shp (3).zip"}
+\NormalTok{rivers\_dir }\OtherTok{\textless{}{-}} \StringTok{"D:/HydroRIVERS"}
+\ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{dir.exists}\NormalTok{(rivers\_dir)) }\FunctionTok{unzip}\NormalTok{(rivers\_zip, }\AttributeTok{exdir =}\NormalTok{ rivers\_dir)}
+
+\NormalTok{river\_shp }\OtherTok{\textless{}{-}} \FunctionTok{list.files}\NormalTok{(rivers\_dir, }\AttributeTok{pattern=}\StringTok{"}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{.shp$"}\NormalTok{, }\AttributeTok{recursive=}\ConstantTok{TRUE}\NormalTok{, }\AttributeTok{full.names=}\ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{streams\_all }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{vect}\NormalTok{(river\_shp)}
+\NormalTok{streams\_all }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{project}\NormalTok{(streams\_all, }\StringTok{"EPSG:3857"}\NormalTok{)}
+
+\NormalTok{lakes\_zip }\OtherTok{\textless{}{-}} \StringTok{"D:/HydroLAKES\_polys\_v10\_shp.zip"}
+\NormalTok{lakes\_dir }\OtherTok{\textless{}{-}} \StringTok{"D:/HydroLAKES"}
+\ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{dir.exists}\NormalTok{(lakes\_dir)) }\FunctionTok{unzip}\NormalTok{(lakes\_zip, }\AttributeTok{exdir =}\NormalTok{ lakes\_dir)}
+
+\NormalTok{lake\_shp }\OtherTok{\textless{}{-}} \FunctionTok{list.files}\NormalTok{(lakes\_dir, }\AttributeTok{pattern=}\StringTok{"}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{.shp$"}\NormalTok{, }\AttributeTok{recursive=}\ConstantTok{TRUE}\NormalTok{, }\AttributeTok{full.names=}\ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{lakes\_all }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{vect}\NormalTok{(lake\_shp)}
+\NormalTok{lakes\_all }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{project}\NormalTok{(lakes\_all, }\StringTok{"EPSG:3857"}\NormalTok{)}
+
+\NormalTok{studyArea }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{ext}\NormalTok{(streams\_all[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{50}\NormalTok{, ]) }\SpecialCharTok{|\textgreater{}}
+\NormalTok{  terra}\SpecialCharTok{::}\FunctionTok{as.polygons}\NormalTok{(}\AttributeTok{crs=}\StringTok{"EPSG:3857"}\NormalTok{) }\SpecialCharTok{|\textgreater{}}
+\NormalTok{  sf}\SpecialCharTok{::}\FunctionTok{st\_as\_sf}\NormalTok{()}
+
+\NormalTok{studyArea\_v }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{vect}\NormalTok{(studyArea)}
+
+\NormalTok{PlanningGrid\_250m }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{rast}\NormalTok{(studyArea\_v, }\AttributeTok{resolution=}\DecValTok{250}\NormalTok{, }\AttributeTok{crs=}\StringTok{"EPSG:3857"}\NormalTok{)}
+\NormalTok{terra}\SpecialCharTok{::}\FunctionTok{values}\NormalTok{(PlanningGrid\_250m) }\OtherTok{\textless{}{-}} \DecValTok{1}
+
+\NormalTok{Provinces }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{vect}\NormalTok{(studyArea)}
+\NormalTok{Provinces}\SpecialCharTok{$}\NormalTok{jurisdiction }\OtherTok{\textless{}{-}} \StringTok{"ON"}
+
+\NormalTok{streams }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{crop}\NormalTok{(streams\_all, studyArea\_v)}
+\NormalTok{lakes   }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{crop}\NormalTok{(lakes\_all, studyArea\_v)}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Run 30m}\label{run-30m}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sim30 }\OtherTok{\textless{}{-}} \FunctionTok{simInit}\NormalTok{(}
+  \AttributeTok{times=}\FunctionTok{list}\NormalTok{(}\AttributeTok{start=}\DecValTok{0}\NormalTok{,}\AttributeTok{end=}\DecValTok{1}\NormalTok{),}
+  \AttributeTok{modules=}\StringTok{"RiparianBuffers"}\NormalTok{,}
+  \AttributeTok{objects=}\FunctionTok{list}\NormalTok{(}
+    \AttributeTok{PlanningGrid\_250m=}\NormalTok{PlanningGrid\_250m,}
+    \AttributeTok{jurisdiction=}\NormalTok{Provinces,}
+    \AttributeTok{Hydrology\_streams=}\NormalTok{streams,}
+    \AttributeTok{Hydrology\_lakes=}\NormalTok{lakes}
+\NormalTok{  ),}
+  \AttributeTok{params=}\FunctionTok{list}\NormalTok{(}\AttributeTok{RiparianBuffers=}\FunctionTok{list}\NormalTok{(}\AttributeTok{hydroRaster\_m=}\DecValTok{30}\NormalTok{))}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   -- To install from:
+\end{verbatim}
+
+\begin{verbatim}
+## [33m  -- Local: stringfish[39m
+\end{verbatim}
+
+\begin{verbatim}
+## [34m  -- 1 of 1[39m
+\end{verbatim}
+
+\begin{verbatim}
+##   -- Installing:
+\end{verbatim}
+
+\begin{verbatim}
+## [90m
+##   -- To install: stringfish[39m
+\end{verbatim}
+
+\begin{verbatim}
+## [34m   [39m
+\end{verbatim}
+
+\begin{verbatim}
+## Installed 1 packages in 3 secs
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:31 simInit RiparianBuffers: module code: PlanningGrid_250m, Hydrology_lakes, Hydrology_streams, jurisdiction are declared in metadata inputObjects, but no default(s) are provided in .inputObjects
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:31 RprnBf:.inputObjects total elpsd: 3.8 secs | 0 RiparianBuffers .inputObjects 5
+\end{verbatim}
+
+\begin{verbatim}
+## Elapsed time for simInit: 3.823485 secs
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sim30 }\OtherTok{\textless{}{-}} \FunctionTok{spades}\NormalTok{(sim30)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   -- To install from:
+\end{verbatim}
+
+\begin{verbatim}
+## [33m  -- Local: stringfish[39m
+\end{verbatim}
+
+\begin{verbatim}
+## [34m  -- 1 of 1[39m
+\end{verbatim}
+
+\begin{verbatim}
+##   -- Installing:
+\end{verbatim}
+
+\begin{verbatim}
+## [90m
+##   -- To install: stringfish[39m
+\end{verbatim}
+
+\begin{verbatim}
+## [34m   [39m
+\end{verbatim}
+
+\begin{verbatim}
+## Installed 1 packages in 0.3 secs
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:31 simInit Using setDTthreads(1). To change: 'options(spades.DTthreads = X)'.
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:31 chckpn:init total elpsd: 3.8 secs | 0 checkpoint init 0
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:31 save  :init total elpsd: 3.8 secs | 0 save init 0
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:31 prgrss:init total elpsd: 3.8 secs | 0 progress init 0
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:31 load  :init total elpsd: 3.8 secs | 0 load init 0
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:31 RprnBf:init total elpsd: 3.8 secs | 0 RiparianBuffers init 1
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:49 RprnBf:init New objects created:
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:49 RprnBf:init        <char>
+## Feb19 20:10:49 RprnBf:init 1:   Riparian
+\end{verbatim}
+
+\begin{verbatim}
+## simList saved in
+## SpaDES.core:::savedSimEnv()$.sim
+## It will be deleted at next spades() call.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{rip30 }\OtherTok{\textless{}{-}}\NormalTok{ sim30}\SpecialCharTok{$}\NormalTok{Riparian}\SpecialCharTok{$}\NormalTok{riparianFraction}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Run 25m}\label{run-25m}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sim25 }\OtherTok{\textless{}{-}} \FunctionTok{simInit}\NormalTok{(}
+  \AttributeTok{times=}\FunctionTok{list}\NormalTok{(}\AttributeTok{start=}\DecValTok{0}\NormalTok{,}\AttributeTok{end=}\DecValTok{1}\NormalTok{),}
+  \AttributeTok{modules=}\StringTok{"RiparianBuffers"}\NormalTok{,}
+  \AttributeTok{objects=}\FunctionTok{list}\NormalTok{(}
+    \AttributeTok{PlanningGrid\_250m=}\NormalTok{PlanningGrid\_250m,}
+    \AttributeTok{jurisdiction=}\NormalTok{Provinces,}
+    \AttributeTok{Hydrology\_streams=}\NormalTok{streams,}
+    \AttributeTok{Hydrology\_lakes=}\NormalTok{lakes}
+\NormalTok{  ),}
+  \AttributeTok{params=}\FunctionTok{list}\NormalTok{(}\AttributeTok{RiparianBuffers=}\FunctionTok{list}\NormalTok{(}\AttributeTok{hydroRaster\_m=}\DecValTok{25}\NormalTok{))}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   -- To install from:
+\end{verbatim}
+
+\begin{verbatim}
+## [33m  -- Local: stringfish[39m
+\end{verbatim}
+
+\begin{verbatim}
+## [34m  -- 1 of 1[39m
+\end{verbatim}
+
+\begin{verbatim}
+##   -- Installing:
+\end{verbatim}
+
+\begin{verbatim}
+## [90m
+##   -- To install: stringfish[39m
+\end{verbatim}
+
+\begin{verbatim}
+## [34m   [39m
+\end{verbatim}
+
+\begin{verbatim}
+## Installed 1 packages in 0.3 secs
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:49 simInit RiparianBuffers: module code: PlanningGrid_250m, Hydrology_lakes, Hydrology_streams, jurisdiction are declared in metadata inputObjects, but no default(s) are provided in .inputObjects
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:50 RprnBf:.inputObjects total elpsd: 0.95 secs | 0 RiparianBuffers .inputObjects 5
+\end{verbatim}
+
+\begin{verbatim}
+## Elapsed time for simInit: 0.9582801 secs
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sim25 }\OtherTok{\textless{}{-}} \FunctionTok{spades}\NormalTok{(sim25)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   -- To install from:
+\end{verbatim}
+
+\begin{verbatim}
+## [33m  -- Local: stringfish[39m
+\end{verbatim}
+
+\begin{verbatim}
+## [34m  -- 1 of 1[39m
+\end{verbatim}
+
+\begin{verbatim}
+##   -- Installing:
+\end{verbatim}
+
+\begin{verbatim}
+## [90m
+##   -- To install: stringfish[39m
+\end{verbatim}
+
+\begin{verbatim}
+## [34m   [39m
+\end{verbatim}
+
+\begin{verbatim}
+## Installed 1 packages in 0.3 secs
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:50 simInit Using setDTthreads(1). To change: 'options(spades.DTthreads = X)'.
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:50 chckpn:init total elpsd: 0.96 secs | 0 checkpoint init 0
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:50 save  :init total elpsd: 0.96 secs | 0 save init 0
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:50 prgrss:init total elpsd: 0.96 secs | 0 progress init 0
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:50 load  :init total elpsd: 0.97 secs | 0 load init 0
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:10:50 RprnBf:init total elpsd: 0.97 secs | 0 RiparianBuffers init 1
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:11:14 RprnBf:init New objects created:
+\end{verbatim}
+
+\begin{verbatim}
+## Feb19 20:11:14 RprnBf:init        <char>
+## Feb19 20:11:14 RprnBf:init 1:   Riparian
+\end{verbatim}
+
+\begin{verbatim}
+## simList saved in
+## SpaDES.core:::savedSimEnv()$.sim
+## It will be deleted at next spades() call.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{rip25 }\OtherTok{\textless{}{-}}\NormalTok{ sim25}\SpecialCharTok{$}\NormalTok{Riparian}\SpecialCharTok{$}\NormalTok{riparianFraction}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Comparison}\label{comparison}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{diff }\OtherTok{\textless{}{-}}\NormalTok{ rip25 }\SpecialCharTok{{-}}\NormalTok{ rip30}
+
+\NormalTok{comparison }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+  \AttributeTok{mean\_abs\_difference =} \FunctionTok{global}\NormalTok{(}\FunctionTok{abs}\NormalTok{(diff), }\StringTok{"mean"}\NormalTok{, }\AttributeTok{na.rm=}\ConstantTok{TRUE}\NormalTok{)[}\DecValTok{1}\NormalTok{],}
+  \AttributeTok{max\_difference =} \FunctionTok{global}\NormalTok{(}\FunctionTok{abs}\NormalTok{(diff), }\StringTok{"max"}\NormalTok{, }\AttributeTok{na.rm=}\ConstantTok{TRUE}\NormalTok{)[}\DecValTok{1}\NormalTok{],}
+  \AttributeTok{percent\_cells\_diff\_gt1pct =} \DecValTok{100} \SpecialCharTok{*} \FunctionTok{global}\NormalTok{(}\FunctionTok{abs}\NormalTok{(diff)}\SpecialCharTok{\textgreater{}}\FloatTok{0.01}\NormalTok{, }\StringTok{"mean"}\NormalTok{, }\AttributeTok{na.rm=}\ConstantTok{TRUE}\NormalTok{)[}\DecValTok{1}\NormalTok{]}
+\NormalTok{)}
+
+\NormalTok{comparison}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##              mean     max   mean.1
+## layer 0.001906622 0.71375 1.442555
+\end{verbatim}
+
+\section{Total Area Difference}\label{total-area-difference}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cell\_area\_ha }\OtherTok{\textless{}{-}} \FunctionTok{prod}\NormalTok{(}\FunctionTok{res}\NormalTok{(rip30))}\SpecialCharTok{/}\DecValTok{10000}
+
+\NormalTok{area30 }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(}\FunctionTok{values}\NormalTok{(rip30), }\AttributeTok{na.rm=}\ConstantTok{TRUE}\NormalTok{)}\SpecialCharTok{*}\NormalTok{cell\_area\_ha}
+\NormalTok{area25 }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(}\FunctionTok{values}\NormalTok{(rip25), }\AttributeTok{na.rm=}\ConstantTok{TRUE}\NormalTok{)}\SpecialCharTok{*}\NormalTok{cell\_area\_ha}
+
+\NormalTok{area\_compare }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}
+  \AttributeTok{total\_area\_30\_ha=}\NormalTok{area30,}
+  \AttributeTok{total\_area\_25\_ha=}\NormalTok{area25,}
+  \AttributeTok{percent\_difference=}\DecValTok{100}\SpecialCharTok{*}\FunctionTok{abs}\NormalTok{(area25}\SpecialCharTok{{-}}\NormalTok{area30)}\SpecialCharTok{/}\NormalTok{area30}
+\NormalTok{)}
+
+\NormalTok{area\_compare}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   total_area_30_ha total_area_25_ha percent_difference
+## 1         25149.36         24334.88           3.238595
+\end{verbatim}
+
+\section{Difference Map}\label{difference-map}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(rip25 }\SpecialCharTok{{-}}\NormalTok{ rip30,}
+     \AttributeTok{main=}\StringTok{"Difference (25m {-} 30m)"}\NormalTok{,}
+     \AttributeTok{col=}\FunctionTok{hcl.colors}\NormalTok{(}\DecValTok{20}\NormalTok{,}\StringTok{"RdBu"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{25OR30_files/figure-latex/unnamed-chunk-6-1.pdf}}
+
+\end{document}
