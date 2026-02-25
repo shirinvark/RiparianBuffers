@@ -132,7 +132,7 @@ buildjurisdiction <- function(sim) {
   ## 5) Clip to study area
   prov <- sf::st_intersection(prov, sim$studyArea)
   
-  ## 6) Keep only required attribute(s) BEFORE conversion
+  ## 6) Keep only required attribute(s) BEFORE conversio
   prov <- prov[, "jurisdiction", drop = FALSE]
   
   ## 7) Convert to SpatVector (SpaDES standard)

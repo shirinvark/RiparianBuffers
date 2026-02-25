@@ -114,7 +114,7 @@ RiparianInit <- function(sim) {
     bufferRaster[jurisRaster == j & mask == 1] <- row$large_lake
   }
   
-  ## ---------------------------------------------------------
+  ## --------------------------------------------------------
   ## 6) Riparian fraction
   ## ---------------------------------------------------------
   rip_frac <- buildRiparianFraction(
