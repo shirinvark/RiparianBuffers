@@ -17,3 +17,13 @@ scratch/
 # Local helper scripts (not part of module API)
 standalone.R
 hydrocheck.R
+*.log
+*.pdf
+*.tex
+*.aux
+*.out
+*.toc
+*.Rproj.user
+.cache/
+scratch/
+outputs/
