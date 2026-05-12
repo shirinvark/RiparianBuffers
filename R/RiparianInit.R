@@ -51,7 +51,24 @@ RiparianInit <- function(sim) {
   lakes$hydro_class <- ifelse(
     lakes$Lake_area >= 1, "large_lake", "small_lake"
   )
-  
+  ## ---------------------------------------------------------
+  ## 3b) Handle empty hydrology (standalone safety)
+  ## ---------------------------------------------------------
+  if (nrow(streams) == 0 && nrow(lakes) == 0) {
+    
+    message("⚠ No hydrology features inside studyArea. Returning zero riparian raster.")
+    
+    zero_rast <- sim$PlanningGrid_250m
+    terra::values(zero_rast) <- 0
+    
+    sim$Riparian <- list(
+      riparianFraction = zero_rast,
+      raster_m         = P(sim)$hydroRaster_m,
+      policy           = policy
+    )
+    
+    return(invisible(sim))
+  }
   ## ---------------------------------------------------------
   ## 4) Jurisdiction raster
   ## ---------------------------------------------------------
@@ -113,7 +130,24 @@ RiparianInit <- function(sim) {
     )
     bufferRaster[jurisRaster == j & mask == 1] <- row$large_lake
   }
-  
+  ## ---------------------------------------------------------
+  ## 5b) Handle empty bufferRaster (no buffers assigned)
+  ## ---------------------------------------------------------
+  if (all(is.na(terra::values(bufferRaster)))) {
+    
+    message("⚠ No valid buffer distances assigned. Returning zero riparian raster.")
+    
+    zero_rast <- sim$PlanningGrid_250m
+    terra::values(zero_rast) <- 0
+    
+    sim$Riparian <- list(
+      riparianFraction = zero_rast,
+      raster_m         = P(sim)$hydroRaster_m,
+      policy           = policy
+    )
+    
+    return(invisible(sim))
+  }
   ## --------------------------------------------------------
   ## 6) Riparian fraction
   ## ---------------------------------------------------------

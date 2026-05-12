@@ -1,8 +1,6 @@
 ############################################################
-## Minimal Smoke Test for RiparianBuffers (NEW ARCHITECTURE)
+## Minimal Smoke Test for RiparianBuffers (TRUE STANDALONE)
 ############################################################
-
-#.rs.restartR()
 
 rm(list = ls())
 gc()
@@ -13,15 +11,11 @@ library(terra)
 library(sf)
 
 ## ---------------------------------------------------------
-## 1. Paths
+## 1. Portable Paths (NO hardcoded drive letters)
 ## ---------------------------------------------------------
-root <- "E:/RiparianBuffers"
+root <- file.path(tempdir(), "RiparianBuffers")
 
-dir.create(file.path(root, "modules"),  recursive = TRUE, showWarnings = FALSE)
-dir.create(file.path(root, "inputs"),   recursive = TRUE, showWarnings = FALSE)
-dir.create(file.path(root, "outputs"),  recursive = TRUE, showWarnings = FALSE)
-dir.create(file.path(root, "cache"),    recursive = TRUE, showWarnings = FALSE)
-dir.create(file.path(root, "scratch"),  recursive = TRUE, showWarnings = FALSE)
+dir.create(root, recursive = TRUE, showWarnings = FALSE)
 
 setPaths(
   modulePath  = file.path(root, "modules"),
@@ -32,7 +26,7 @@ setPaths(
 )
 
 ## ---------------------------------------------------------
-## 2. Get module
+## 2. Get module from GitHub
 ## ---------------------------------------------------------
 getModule(
   "shirinvark/RiparianBuffers",
@@ -41,48 +35,33 @@ getModule(
 )
 
 ## ---------------------------------------------------------
-## 3. Create SMALL study area (simple square)
+## 3. Create SIMPLE artificial study area (NO external shapefile)
 ## ---------------------------------------------------------
-library(sf)
-library(terra)
-
-# Read real FMU boundary
-studyArea_sf <- sf::st_read(
-  "E:/EasternCanadaDataPrep/BOUNDARIES/Sudbury_FMU_5070.shp",
-  quiet = TRUE
+studyArea_v <- terra::vect(
+  sf::st_as_sf(
+    sf::st_sfc(
+      sf::st_polygon(list(matrix(
+        c(0,0,
+          0,10000,
+          10000,10000,
+          10000,0,
+          0,0),
+        ncol = 2,
+        byrow = TRUE
+      ))),
+      crs = 5070
+    )
+  )
 )
 
-studyArea_sf <- sf::st_make_valid(studyArea_sf)
-
-# اطمینان از CRS
-sf::st_crs(studyArea_sf)
-
-# تبدیل به terra SpatVector (پیشنهادی برای هماهنگی کامل با ماژول)
-studyArea_v <- terra::vect(studyArea_sf)
-
-# چک نهایی
-terra::crs(studyArea_v)
-
 ## ---------------------------------------------------------
-## 4. Create PlanningGrid_250m
-## ---------------------------------------------------------
-PlanningGrid_250m <- terra::rast(
-  studyArea_v,
-  resolution = 250,
-  crs = terra::crs(studyArea_v)
-)
-
-terra::values(PlanningGrid_250m) <- 1
-
-## ---------------------------------------------------------
-## 5. simInit
+## 4. simInit (NO PlanningGrid supplied)
 ## ---------------------------------------------------------
 sim <- simInit(
   times   = list(start = 0, end = 1),
   modules = "RiparianBuffers",
   objects = list(
-    studyArea         = studyArea_v,
-    PlanningGrid_250m = PlanningGrid_250m
+    studyArea = studyArea_v
   ),
   params = list(
     RiparianBuffers = list(
@@ -95,23 +74,20 @@ sim <- simInit(
     spades.save       = FALSE
   )
 )
-terra::crs(studyArea_v)
-terra::crs(PlanningGrid_250m)
+
 ## ---------------------------------------------------------
-## 6. Run
+## 5. Run
 ## ---------------------------------------------------------
 sim <- spades(sim)
 
 ## ---------------------------------------------------------
-## 7. Checks
+## 6. Quick checks
 ## ---------------------------------------------------------
-names(sim$Riparian)
+print(names(sim$Riparian))
 
 summary(values(sim$Riparian$riparianFraction))
 
 mean(sim$Riparian$riparianFraction[] > 0, na.rm = TRUE)
 
-plot(
-  sim$Riparian$riparianFraction,
-  main = "Riparian fraction (0–1)"
-)
+plot(sim$Riparian$riparianFraction,
+     main = "Riparian fraction (0–1)")
