@@ -6,9 +6,7 @@
 ## If exact location is required, functions will be: `sim$.mods$<moduleName>$FunctionName`.
 defineModule(sim, list(
   name = "RiparianBuffers",
-  description = "Computes raster-based riparian influence (fractional).
-  Uses upstream hydrology inputs if supplied; otherwise downloads HydroRIVERS and HydroLAKES.
-  No landbase decisions",
+  description = "Coarse-resolution PlanningGrid_250m supplied upstream (created internally if missing)",
   keywords = c("hydrology", "riparian", "buffer"),
   authors = structure(list(list(given = c("Shirin", "Middle"), family = "Varkouhi", role = c("aut", "cre"), email = "Shirin.varkuhi@gmail.com", comment = NULL)), class = "person"),
   childModules = character(0),
@@ -132,7 +130,22 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   dir.create(dPath, recursive = TRUE, showWarnings = FALSE)
   ## ---- Ensure studyArea exists ----
   SpaDES.core::checkObject(sim, "studyArea")
-  SpaDES.core::checkObject(sim, "PlanningGrid_250m", "SpatRaster")
+  #SpaDES.core::checkObject(sim, "PlanningGrid_250m", "SpatRaster")
+  ## ---------------------------------------------------------
+  ## PlanningGrid fallback
+  ## ---------------------------------------------------------
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m", sim)) {
+    
+    message("▶ Creating default PlanningGrid_250m from studyArea...")
+    
+    sim$PlanningGrid_250m <- terra::rast(
+      sim$studyArea,
+      resolution = 250,
+      crs = terra::crs(sim$studyArea)
+    )
+    
+    terra::values(sim$PlanningGrid_250m) <- 1
+  }
   ## -------------------------
   ## riparianBufferPolicy
   ## -------------------------

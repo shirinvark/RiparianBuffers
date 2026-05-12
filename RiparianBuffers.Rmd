@@ -7,79 +7,119 @@ output:
     toc: true
     toc_depth: 2
 ---
-```{r setup, include=TRUE, echo=FALSE, message=FALSE}
+
+```{r setup, include=FALSE, message=FALSE}
 library(SpaDES.core)
 library(SpaDES.project)
 library(terra)
 library(sf)
-knitr::opts_chunk$set(echo = TRUE)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
 ```
-## Overview
 
-This module computes a fractional riparian influence raster (values between 0 and 1)
-from hydrological features and jurisdiction-specific buffer rules.
+# Overview
 
-The module is policy-aware but decision-free:
-it produces a spatial signal only and leaves all regulatory or management interpretation
-to downstream modules.
+**RiparianBuffers** computes a spatially explicit fractional riparian influence raster (0–1)  
+based on hydrological features and jurisdiction-specific buffer policies.
 
-## Plotting
+The module is:
 
-Nothing.
+- Policy-aware  
+- Decision-neutral  
+- Spatial-signal generating only  
 
-## Saving
+It does **not** apply regulatory exclusions or define landbase decisions.
 
-Nothing.
+---
 
-All outputs are stored in memory as part of the simulation object.
+# Conceptual Role in the Model
 
-## What this module does
+This module translates:
+
+Hydrology × Jurisdiction × Buffer Policy  
+
+into  
+
+A continuous riparian influence surface.
+
+The output is intended for use by downstream modules  
+(e.g., landbase, AAC, biodiversity, habitat models).
+
+---
+
+# What This Module Does
 
 - Computes fractional riparian influence (0–1)
-- Uses streams and lakes as hydrological features
-- Supports jurisdiction-specific buffer widths
-- Produces outputs reusable by downstream modules
+- Uses streams and lakes as hydrological drivers
+- Applies jurisdiction-specific buffer widths
+- Produces a reusable spatial signal
+- Supports standalone execution (downloads HydroRIVERS/HydroLAKES if needed)
 
-## What this module does not do
+---
+
+# What This Module Does Not Do
 
 - Does not define harvestable landbase
 - Does not apply regulatory exclusions
-- Does not interpret policy compliance
-- Does not classify forest vs non-forest
+- Does not interpret legal compliance
+- Does not classify forest/non-forest
+- Does not make management decisions
 
-## Input data
+---
 
-This module expects the following input objects:
+# Required Inputs
 
-- **PlanningRaster** (`SpatRaster`)  
-  Coarse-resolution planning grid
+The module expects the following objects in `sim`:
 
-- **Hydrology_streams** (`SpatVector`)  
-  Stream and river network (e.g. HydroRIVERS)
+## 1. PlanningGrid_250m (`SpatRaster`)
+Coarse-resolution planning grid.
 
-- **Hydrology_lakes** (`SpatVector`)  
-  Lakes and large water bodies (e.g. HydroLAKES)
+## 2. studyArea (`SpatVector` or `sf`)
+Polygon used for cropping hydrological inputs.
 
-- **Provinces** (`SpatVector`)  
-  Jurisdiction boundaries with a `jurisdiction` field
+## 3. riparianBufferPolicy (`data.frame`)
+Table defining buffer widths by jurisdiction and hydrology class.
 
-- **riparianBufferPolicy** (`data.frame`)  
-  Table defining buffer widths by jurisdiction and hydrology class
-  
-## Study area
+## 4. Hydrology_streams (`SpatVector`) (optional)
+Stream network (e.g., HydroRIVERS).
 
-The study area is supplied upstream as spatial input objects
-and is not defined internally in this module.
+## 5. Hydrology_lakes (`SpatVector`) (optional)
+Lake polygons (e.g., HydroLAKES).
 
-All hydrological and jurisdictional inputs are expected
-to be pre-cropped and projected consistently
-(e.g. by EasternCanadaDataPrep).
+If hydrology inputs are not supplied upstream,  
+the module automatically downloads and prepares them.
 
-## Buffer policy
+---
 
-Riparian buffer widths are supplied as a data frame.
+# Jurisdiction Layer
 
-Example:
+If a jurisdiction layer is not provided,  
+the module builds one internally using `rnaturalearth`.
+
+Provinces included:
+
+- Ontario (ON)
+- Quebec (QC)
+- New Brunswick (NB)
+- Nova Scotia (NS)
+- Prince Edward Island (PE)
+- Newfoundland and Labrador (NL)
+
+The layer is:
+
+- Cropped to `studyArea`
+- Projected to match the planning grid
+- Stored as `sim$jurisdiction`
+
+---
+
+# Buffer Policy Structure
+
+Buffer widths must be provided in the following format:
 
 ```{r policy_example, eval=FALSE}
 data.frame(
@@ -90,14 +130,59 @@ data.frame(
   large_lake   = c(50, 50, 40)
 )
 ```
-Buffer distances are applied geometrically only.
-No regulatory interpretation is performed in this module.
+
+Rules:
+
+- Distances are interpreted geometrically only.
+- No regulatory interpretation occurs here.
+- If a jurisdiction-specific rule is missing, `"default"` is used.
 
 ---
 
-## Example usage
+# Computational Resolution
 
-```{r module_usage, message=FALSE, eval=FALSE}
+Riparian influence is computed at a higher resolution defined by:
+
+`hydroRaster_m`
+
+Default: 30 m
+
+This allows narrow hydrological features to be captured  
+independently from the 250 m planning grid.
+
+The fractional influence is then aggregated back to `PlanningGrid_250m`.
+
+---
+
+# Output Object
+
+The module creates:
+
+## sim$Riparian (list)
+
+Contains:
+
+- `riparianFraction` – SpatRaster (0–1)
+- `raster_m` – computation resolution
+- `policy` – buffer policy table used
+
+---
+
+# Interpretation of Output
+
+| Value | Meaning |
+|-------|---------|
+| 0     | No riparian influence |
+| 1     | Fully riparian |
+| 0–1   | Partial influence |
+
+Interpretation and decision rules are handled downstream.
+
+---
+
+# Example Usage
+
+```{r module_usage, eval=FALSE}
 times <- list(start = 0, end = 1)
 
 modules <- list("RiparianBuffers")
@@ -109,10 +194,11 @@ parameters <- list(
 )
 
 objects <- list(
-  PlanningRaster    = PlanningRaster,
-  Hydrology_streams = Hydrology_streams,
-  Hydrology_lakes   = Hydrology_lakes,
-  Provinces         = Provinces
+  PlanningGrid_250m    = PlanningGrid_250m,
+  studyArea            = studyArea,
+  Hydrology_streams    = Hydrology_streams,
+  Hydrology_lakes      = Hydrology_lakes,
+  riparianBufferPolicy = riparianBufferPolicy
 )
 
 sim <- simInit(
@@ -125,30 +211,27 @@ sim <- simInit(
 sim <- spades(sim)
 ```
 
+---
+
+# Anticipated Linkages
+
+RiparianBuffers is designed to precede:
+
+- Landbase estimation modules
+- Harvest/AAC modules
+- Habitat and biodiversity modules
+- Spatial weighting or masking frameworks
 
 ---
 
-## Output data
+# Plotting
 
-The module creates a single output object:
+None.
 
-- **sim$Riparian**
-  - `riparianFraction` – SpatRaster (0–1)
-  - `raster_m` – computation resolution (m)
-  - `policy` – buffer policy table used
+---
 
-## Interpretation
+# Saving
 
-- 0 indicates no riparian influence
-- 1 indicates full riparian coverage
-- Intermediate values indicate partial influence
+None.
 
-Downstream modules determine how this signal is used
-(e.g. masking, weighting, reporting).
-## Anticipated linkages to other modules
-
-RiparianBuffers is designed to be used upstream of:
-
-- landbase estimation modules
-- harvesting and AAC modules
-- habitat and biodiversity analyses
+All outputs remain in-memory within the simulation object.
