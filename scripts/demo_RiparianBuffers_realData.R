@@ -1,5 +1,5 @@
 ############################################################
-## Minimal Smoke Test for RiparianBuffers (TRUE STANDALONE)
+## Minimal Smoke Test for RiparianBuffers (REAL FMU)
 ############################################################
 
 rm(list = ls())
@@ -11,7 +11,7 @@ library(terra)
 library(sf)
 
 ## ---------------------------------------------------------
-## 1. Portable Paths (NO hardcoded drive letters)
+## 1. Portable Paths
 ## ---------------------------------------------------------
 root <- file.path(tempdir(), "RiparianBuffers")
 
@@ -26,7 +26,7 @@ setPaths(
 )
 
 ## ---------------------------------------------------------
-## 2. Get module from GitHub
+## 2. Get module
 ## ---------------------------------------------------------
 getModule(
   "shirinvark/RiparianBuffers",
@@ -35,59 +35,89 @@ getModule(
 )
 
 ## ---------------------------------------------------------
-## 3. Create SIMPLE artificial study area (NO external shapefile)
+## 3. Read REAL study area
 ## ---------------------------------------------------------
-studyArea_v <- terra::vect(
-  sf::st_as_sf(
-    sf::st_sfc(
-      sf::st_polygon(list(matrix(
-        c(0,0,
-          0,10000,
-          10000,10000,
-          10000,0,
-          0,0),
-        ncol = 2,
-        byrow = TRUE
-      ))),
-      crs = 5070
-    )
-  )
+studyArea <- sf::st_read(
+  "D:/BOUNDARIES/Sudbury_FMU_5070.shp",
+  quiet = TRUE
+)
+
+studyArea <- sf::st_make_valid(studyArea)
+
+studyArea <- sf::st_union(studyArea)
+
+studyArea <- sf::st_sf(
+  id = 1,
+  geometry = studyArea
 )
 
 ## ---------------------------------------------------------
-## 4. simInit (NO PlanningGrid supplied)
+## 4. CRS check
+## ---------------------------------------------------------
+studyArea <- sf::st_transform(
+  studyArea,
+  5070
+)
+
+studyArea <- terra::vect(studyArea)
+
+## ---------------------------------------------------------
+## 5. Create sim
 ## ---------------------------------------------------------
 sim <- simInit(
-  times   = list(start = 0, end = 1),
-  modules = "RiparianBuffers",
-  objects = list(
-    studyArea = studyArea_v
+  
+  times = list(
+    start = 0,
+    end   = 1
   ),
+  
   params = list(
-    RiparianBuffers = list(
-      hydroRaster_m = 30
-    )
+    RiparianBuffers = list()
   ),
-  options = list(
-    spades.checkpoint = FALSE,
-    spades.progress   = TRUE,
-    spades.save       = FALSE
+  
+  modules = "RiparianBuffers",
+  
+  objects = list(
+    studyArea = studyArea
   )
 )
 
 ## ---------------------------------------------------------
-## 5. Run
+## 6. Run
 ## ---------------------------------------------------------
 sim <- spades(sim)
 
 ## ---------------------------------------------------------
-## 6. Quick checks
+## 7. Quick checks
 ## ---------------------------------------------------------
 print(names(sim$Riparian))
 
-summary(values(sim$Riparian$riparianFraction))
+summary(
+  values(sim$Riparian$riparianFraction)
+)
 
-mean(sim$Riparian$riparianFraction[] > 0, na.rm = TRUE)
+mean(
+  sim$Riparian$riparianFraction[] > 0,
+  na.rm = TRUE
+)
 
-plot(sim$Riparian$riparianFraction,
-     main = "Riparian fraction (0–1)")
+nrow(sim$Hydrology_streams)
+
+nrow(sim$Hydrology_lakes)
+
+plot(
+  sim$Riparian$riparianFraction,
+  main = "Riparian fraction (0-1)"
+)
+
+plot(
+  sim$Hydrology_streams,
+  add = TRUE,
+  col = "blue"
+)
+
+plot(
+  sim$Hydrology_lakes,
+  add = TRUE,
+  col = "cyan"
+)

@@ -42,14 +42,38 @@ RiparianInit <- function(sim) {
   ## ---------------------------------------------------------
   ## 3) Classify hydrology
   ## ---------------------------------------------------------
+  ## ---------------------------------------------------------
+  ## 3) Classify hydrology
+  ## ---------------------------------------------------------
+  
   streams <- sim$Hydrology_streams
-  streams$hydro_class <- ifelse(
-    streams$ORD_STRA >= 4, "large_stream", "small_stream"
-  )
+  
+  if (!terra::same.crs(streams, sim$PlanningGrid_250m)) {
+    streams <- terra::project(
+      streams,
+      sim$PlanningGrid_250m
+    )
+  }
   
   lakes <- sim$Hydrology_lakes
+  
+  if (!terra::same.crs(lakes, sim$PlanningGrid_250m)) {
+    lakes <- terra::project(
+      lakes,
+      sim$PlanningGrid_250m
+    )
+  }
+  
+  streams$hydro_class <- ifelse(
+    streams$ORD_STRA >= 4,
+    "large_stream",
+    "small_stream"
+  )
+  
   lakes$hydro_class <- ifelse(
-    lakes$Lake_area >= 1, "large_lake", "small_lake"
+    lakes$Lake_area >= 1,
+    "large_lake",
+    "small_lake"
   )
   ## ---------------------------------------------------------
   ## 3b) Handle empty hydrology (standalone safety)
