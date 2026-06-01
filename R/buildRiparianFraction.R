@@ -66,7 +66,7 @@ buildRiparianFraction <- function(
   ## This is intentionally decoupled from PlanningGrid_250m
   # =========================================================
   # CASE 1: UNIFORM BUFFER 
-  # =========================================================
+  # ===================================================
   ## Uniform buffer case:
   ## applies a single buffer distance to all streams.
   ## This preserves legacy behaviour and provides
