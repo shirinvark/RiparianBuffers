@@ -1,5 +1,5 @@
 RiparianInit <- function(sim) {
-  
+  message("DEBUG: ENTERING RIPARIAN INIT")
   ## ---------------------------------------------------------
   ## 0) CHECK inputs
   ## ---------------------------------------------------------
@@ -38,7 +38,11 @@ RiparianInit <- function(sim) {
     crs        = terra::crs(sim$PlanningGrid_250m)
   )
   terra::values(hydro_template) <- NA_real_
+  message("DEBUG hydro template extent")
   
+  print(
+    terra::ext(hydro_template)
+  )
   ## ---------------------------------------------------------
   ## 3) Classify hydrology
   ## ---------------------------------------------------------
@@ -54,7 +58,9 @@ RiparianInit <- function(sim) {
       sim$PlanningGrid_250m
     )
   }
+  message("DEBUG n streams = ", nrow(streams))
   
+  print(terra::ext(streams))
   lakes <- sim$Hydrology_lakes
   
   if (!terra::same.crs(lakes, sim$PlanningGrid_250m)) {
@@ -62,6 +68,8 @@ RiparianInit <- function(sim) {
       lakes,
       sim$PlanningGrid_250m
     )
+    print(crs(streams))
+    print(ext(streams))
   }
   
   streams$hydro_class <- ifelse(
@@ -69,7 +77,9 @@ RiparianInit <- function(sim) {
     "large_stream",
     "small_stream"
   )
-  
+  print(
+    table(streams$hydro_class)
+  )
   lakes$hydro_class <- ifelse(
     lakes$Lake_area >= 1,
     "large_lake",
@@ -102,7 +112,14 @@ RiparianInit <- function(sim) {
     field = "jurisdiction"
   )
   
-  
+  message(
+    "DEBUG juris cells = ",
+    terra::global(
+      !is.na(jurisRaster),
+      "sum",
+      na.rm = TRUE
+    )[1,1]
+  )
   ## ---------------------------------------------------------
   ## 5) Build bufferRaster
   ## ---------------------------------------------------------
@@ -123,37 +140,107 @@ RiparianInit <- function(sim) {
     }
     
     ## small streams
+    # mask <- terra::rasterize(
+    # streams[streams$hydro_class == "small_stream", ],
+    # hydro_template,
+    #touches = TRUE
+    #)
+    # mask <- terra::rasterize(
+    #  streams[streams$hydro_class == "small_stream", ],
+    # hydro_template,
+    #field = 1,
+    #touches = TRUE
+    #)
+    
     mask <- terra::rasterize(
-      streams[streams$hydro_class == "small_stream", ],
+      terra::buffer(
+        streams[streams$hydro_class == "small_stream", ],
+        width = 100
+      ),
       hydro_template,
+      field = 1,
       touches = TRUE
     )
-    bufferRaster[jurisRaster == j & mask == 1] <- row$small_stream
     
+    print(mask)
+    print(
+      streams[streams$hydro_class == "small_stream", ]
+    )
+    message(
+      "DEBUG small stream cells = ",
+      terra::global(
+        !is.na(mask),
+        "sum",
+        na.rm = TRUE
+      )[1,1]
+    )
+    bufferRaster[jurisRaster == j & mask == 1] <- row$small_stream
+    message(
+      "DEBUG assigned cells = ",
+      terra::global(
+        !is.na(bufferRaster),
+        "sum",
+        na.rm = TRUE
+      )[1,1]
+    )
     ## large streams
+    # mask <- terra::rasterize(
+    # streams[streams$hydro_class == "large_stream", ],
+    # hydro_template,
+    # touches = TRUE
+    # )
     mask <- terra::rasterize(
       streams[streams$hydro_class == "large_stream", ],
       hydro_template,
+      field = 1,
       touches = TRUE
     )
     bufferRaster[jurisRaster == j & mask == 1] <- row$large_stream
     
     ## small lakes
+    #  mask <- terra::rasterize(
+    #   lakes[lakes$hydro_class == "small_lake", ],
+    # hydro_template,
+    # touches = TRUE
+    # )
+    ## small lakes
     mask <- terra::rasterize(
       lakes[lakes$hydro_class == "small_lake", ],
       hydro_template,
+      field = 1,
       touches = TRUE
     )
+    
     bufferRaster[jurisRaster == j & mask == 1] <- row$small_lake
     
+    ## large lakes
+    # mask <- terra::rasterize(
+    #  lakes[lakes$hydro_class == "large_lake", ],
+    #hydro_template,
+    # touches = TRUE
+    #)
     ## large lakes
     mask <- terra::rasterize(
       lakes[lakes$hydro_class == "large_lake", ],
       hydro_template,
+      field = 1,
       touches = TRUE
     )
+    print(mask)
     bufferRaster[jurisRaster == j & mask == 1] <- row$large_lake
   }
+  message(
+    "DEBUG bufferRaster cells after loop = ",
+    terra::global(
+      !is.na(bufferRaster),
+      "sum",
+      na.rm = TRUE
+    )[1,1]
+  )
+  
+  print(
+    terra::freq(bufferRaster)
+  )
   ## ---------------------------------------------------------
   ## 5b) Handle empty bufferRaster (no buffers assigned)
   ## ---------------------------------------------------------
