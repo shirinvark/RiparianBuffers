@@ -217,11 +217,11 @@ buildRiparianFraction <- function(
   global(riparian_fraction, "max", na.rm = TRUE)
   
   global(riparian_fraction, "min", na.rm = TRUE)
-  #riparian_fraction <- terra::resample(
-  # riparian_fraction,
-  #PlanningGrid,
-  #method = "near"
-  # )
+  riparian_fraction <- terra::resample(
+  riparian_fraction,
+  PlanningGrid,
+  method = "near"
+   )
   global(riparian_fraction, "max", na.rm = TRUE)
   
   global(riparian_fraction, "min", na.rm = TRUE)
