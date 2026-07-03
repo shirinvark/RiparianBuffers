@@ -3,7 +3,7 @@ RiparianInit <- function(sim) {
   ## ---------------------------------------------------------
   ## 0) CHECK inputs
   ## ---------------------------------------------------------
-  stopifnot(inherits(sim$PlanningGrid_250m, "SpatRaster"))
+  stopifnot(inherits(sim$PlanningGrid, "SpatRaster"))
   stopifnot(inherits(sim$jurisdiction, "SpatVector"))
   stopifnot(inherits(sim$Hydrology_streams, "SpatVector"))
   stopifnot(inherits(sim$Hydrology_lakes, "SpatVector"))
@@ -33,9 +33,9 @@ RiparianInit <- function(sim) {
   ## 2) Hydro template
   ## ---------------------------------------------------------
   hydro_template <- terra::rast(
-    ext        = terra::ext(sim$PlanningGrid_250m),
+    ext        = terra::ext(sim$PlanningGrid),
     resolution = P(sim)$hydroRaster_m,
-    crs        = terra::crs(sim$PlanningGrid_250m)
+    crs        = terra::crs(sim$PlanningGrid)
   )
   terra::values(hydro_template) <- NA_real_
   message("DEBUG hydro template extent")
@@ -52,10 +52,10 @@ RiparianInit <- function(sim) {
   
   streams <- sim$Hydrology_streams
   
-  if (!terra::same.crs(streams, sim$PlanningGrid_250m)) {
+  if (!terra::same.crs(streams, sim$PlanningGrid)) {
     streams <- terra::project(
       streams,
-      sim$PlanningGrid_250m
+      sim$PlanningGrid
     )
   }
   message("DEBUG n streams = ", nrow(streams))
@@ -63,10 +63,10 @@ RiparianInit <- function(sim) {
   print(terra::ext(streams))
   lakes <- sim$Hydrology_lakes
   
-  if (!terra::same.crs(lakes, sim$PlanningGrid_250m)) {
+  if (!terra::same.crs(lakes, sim$PlanningGrid)) {
     lakes <- terra::project(
       lakes,
-      sim$PlanningGrid_250m
+      sim$PlanningGrid
     )
     print(crs(streams))
     print(ext(streams))
@@ -92,7 +92,7 @@ RiparianInit <- function(sim) {
     
     message("⚠ No hydrology features inside studyArea. Returning zero riparian raster.")
     
-    zero_rast <- sim$PlanningGrid_250m
+    zero_rast <- sim$PlanningGrid
     terra::values(zero_rast) <- 0
     
     sim$Riparian <- list(
@@ -248,7 +248,7 @@ RiparianInit <- function(sim) {
     
     message("⚠ No valid buffer distances assigned. Returning zero riparian raster.")
     
-    zero_rast <- sim$PlanningGrid_250m
+    zero_rast <- sim$PlanningGrid
     terra::values(zero_rast) <- 0
     
     sim$Riparian <- list(
@@ -263,7 +263,7 @@ RiparianInit <- function(sim) {
   ## 6) Riparian fraction
   ## ---------------------------------------------------------
   rip_frac <- buildRiparianFraction(
-    PlanningGrid_250m = sim$PlanningGrid_250m,
+    PlanningGrid = sim$PlanningGrid,
     streams        = streams,
     lakes          = lakes,
     bufferRaster   = bufferRaster,

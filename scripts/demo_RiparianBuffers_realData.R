@@ -38,7 +38,7 @@ getModule(
 ## 3. Read REAL study area
 ## ---------------------------------------------------------
 studyArea <- sf::st_read(
-  "D:/BOUNDARIES/Sudbury_FMU_5070.shp",
+  "D:/BOUNDARIES/NL_EB_Poly_50k_Upload.shp",
   quiet = TRUE
 )
 
