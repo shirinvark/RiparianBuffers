@@ -6,7 +6,7 @@
 ## If exact location is required, functions will be: `sim$.mods$<moduleName>$FunctionName`.
 defineModule(sim, list(
   name = "RiparianBuffers",
-  description = "Coarse-resolution PlanningGrid_250m supplied upstream (created internally if missing)",
+  description = "Coarse-resolution PlanningGrid supplied upstream (created internally if missing)",
   keywords = c("hydrology", "riparian", "buffer"),
   authors = structure(list(list(given = c("Shirin", "Middle"), family = "Varkouhi", role = c("aut", "cre"), email = "Shirin.varkuhi@gmail.com", comment = NULL)), class = "person"),
   childModules = character(0),
@@ -43,9 +43,9 @@ defineModule(sim, list(
     ),
     
     expectsInput(
-      objectName  = "PlanningGrid_250m",
+      objectName  = "PlanningGrid",
       objectClass = "SpatRaster",
-      desc        = "Coarse-resolution PlanningGrid_250m supplied by upstream module",
+      desc        = "Coarse-resolution PlanningGrid supplied by upstream module",
       sourceURL   = NA
     ),
     
@@ -130,21 +130,33 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   dir.create(dPath, recursive = TRUE, showWarnings = FALSE)
   ## ---- Ensure studyArea exists ----
   SpaDES.core::checkObject(sim, "studyArea")
-  #SpaDES.core::checkObject(sim, "PlanningGrid_250m", "SpatRaster")
+  #SpaDES.core::checkObject(sim, "PlanningGrid", "SpatRaster")
   ## ---------------------------------------------------------
-  ## PlanningGrid fallback
   ## ---------------------------------------------------------
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid_250m", sim)) {
+  # =========================================================
+  # 1) PlanningGrid
+  # =========================================================
+  
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
     
-    message("▶ Creating default PlanningGrid_250m from studyArea...")
+    if (!SpaDES.core::suppliedElsewhere("rasterToMatch", sim)) {
+      
+      study_v <- if (inherits(sim$studyArea, "SpatVector")) {
+        sim$studyArea
+      } else {
+        terra::vect(sim$studyArea)
+      }
+      
+      sim$rasterToMatch <- terra::rast(
+        ext = terra::ext(study_v),
+        resolution = 240,
+        crs = terra::crs(study_v)
+      )
+    }
     
-    sim$PlanningGrid_250m <- terra::rast(
-      sim$studyArea,
-      resolution = 250,
-      crs = terra::crs(sim$studyArea)
-    )
-    
-    terra::values(sim$PlanningGrid_250m) <- 1
+    sim$PlanningGrid <- sim$rasterToMatch
+    terra::values(sim$PlanningGrid) <- 1
+  }
   }
   ## -------------------------
   ## riparianBufferPolicy
@@ -186,7 +198,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       targetFile = "HydroRIVERS_v10_na_shp/HydroRIVERS_v10_na.shp",
       fun = terra::vect,
       cropTo = sim$studyArea,
-      projectTo = sim$PlanningGrid_250m
+      projectTo = sim$PlanningGrid
     )
     
     sim$Hydrology_streams <- streams
@@ -203,7 +215,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       targetFile = "HydroLAKES_polys_v10_shp/HydroLAKES_polys_v10.shp",
       fun = terra::vect,
       cropTo = sim$studyArea,
-      projectTo = sim$PlanningGrid_250m
+      projectTo = sim$PlanningGrid
     )
     
     sim$Hydrology_lakes <- lakes
