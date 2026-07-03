@@ -156,8 +156,8 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
     
     sim$PlanningGrid <- sim$rasterToMatch
     terra::values(sim$PlanningGrid) <- 1
-  }
-  }
+    }
+  
   ## -------------------------
   ## riparianBufferPolicy
   ## -------------------------
