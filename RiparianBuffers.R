@@ -137,27 +137,27 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   # 1) PlanningGrid
   # =========================================================
   
-  if (!SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
-    
-    if (!SpaDES.core::suppliedElsewhere("rasterToMatch", sim)) {
-      
-      study_v <- if (inherits(sim$studyArea, "SpatVector")) {
-        sim$studyArea
-      } else {
-        terra::vect(sim$studyArea)
-      }
-      
-      sim$rasterToMatch <- terra::rast(
-        ext = terra::ext(study_v),
-        resolution = 240,
-        crs = terra::crs(study_v)
-      )
-    }
-    
-    sim$PlanningGrid <- sim$rasterToMatch
-    terra::values(sim$PlanningGrid) <- 1
-    }
+  # =========================================================
+  # 1) PlanningGrid
+  # =========================================================
   
+  if (!inherits(sim$rasterToMatch, "SpatRaster")) {
+    
+    study_v <- if (inherits(sim$studyArea, "SpatVector")) {
+      sim$studyArea
+    } else {
+      terra::vect(sim$studyArea)
+    }
+    
+    sim$rasterToMatch <- terra::rast(
+      ext = terra::ext(study_v),
+      resolution = 240,
+      crs = terra::crs(study_v)
+    )
+  }
+  
+  sim$PlanningGrid <- sim$rasterToMatch
+  terra::values(sim$PlanningGrid) <- 1
   ## -------------------------
   ## riparianBufferPolicy
   ## -------------------------

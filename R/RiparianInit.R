@@ -244,8 +244,14 @@ RiparianInit <- function(sim) {
   ## ---------------------------------------------------------
   ## 5b) Handle empty bufferRaster (no buffers assigned)
   ## ---------------------------------------------------------
-  if (all(is.na(terra::values(bufferRaster)))) {
-    
+  #if (all(is.na(terra::values(bufferRaster)))) {
+  nAssigned <- terra::global(
+    !is.na(bufferRaster),
+    "sum",
+    na.rm = TRUE
+  )[1, 1]
+  
+  if (nAssigned == 0) {
     message("⚠ No valid buffer distances assigned. Returning zero riparian raster.")
     
     zero_rast <- sim$PlanningGrid
