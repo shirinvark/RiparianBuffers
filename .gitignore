@@ -27,3 +27,4 @@ hydrocheck.R
 .cache/
 scratch/
 outputs/
+.positai

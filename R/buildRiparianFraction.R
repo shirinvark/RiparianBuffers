@@ -138,23 +138,7 @@ buildRiparianFraction <- function(
     hydro_r <- terra::cover(hydro_r, lakes_r)
   }
   dist_r <- terra::distance(hydro_r)
-  message(
-    "DEBUG dist_r non-NA = ",
-    terra::global(
-      !is.na(dist_r),
-      "sum",
-      na.rm = TRUE
-    )[1,1]
-  )
-  
-  message(
-    "DEBUG bufferRaster non-NA = ",
-    terra::global(
-      !is.na(bufferRaster),
-      "sum",
-      na.rm = TRUE
-    )[1,1]
-  )
+ 
   max_dist <- terra::global(bufferRaster, "max", na.rm = TRUE)[1,1]
   
   if (!is.finite(max_dist)) {
@@ -172,75 +156,30 @@ buildRiparianFraction <- function(
   ## ---- SAFE riparian mask (NO ifel) ----
   
   cond <- dist_r <= bufferRaster
-  message(
-    "DEBUG cond TRUE cells = ",
-    terra::global(
-      cond,
-      "sum",
-      na.rm = TRUE
-    )[1,1]
-  )
+  
   # هر NA → FALSE
   cond[is.na(cond)] <- FALSE
   
   # logical → numeric {0,1}
   rip_hi <- cond * 1
-  print(
-    terra::freq(rip_hi)
-  )
+  
   fact <- max(1, round(res(PlanningGrid)[1] / hydroRaster_m))
-  #fact <- 1
   riparian_fraction <- terra::aggregate(
     rip_hi,
     fact = fact,
     fun  = "mean",
     na.rm = TRUE
   )
-  print(
-    terra::freq(riparian_fraction)
-  )
-  print(
-    terra::global(
-      riparian_fraction,
-      "max",
-      na.rm = TRUE
-    )
-  )
   
-  print(
-    terra::global(
-      riparian_fraction,
-      "min",
-      na.rm = TRUE
-    )
-  )
-  global(riparian_fraction, "max", na.rm = TRUE)
-  
-  global(riparian_fraction, "min", na.rm = TRUE)
   riparian_fraction <- terra::resample(
   riparian_fraction,
   PlanningGrid,
   method = "near"
    )
-  global(riparian_fraction, "max", na.rm = TRUE)
   
-  global(riparian_fraction, "min", na.rm = TRUE)
-  print(
-    terra::freq(riparian_fraction)
-  )
   
   riparian_fraction[is.na(riparian_fraction)] <- 0
   
-  print(
-    terra::freq(riparian_fraction)
-  )
-  
-  print(
-    terra::global(
-      riparian_fraction,
-      "max",
-      na.rm = TRUE
-    )
-  )
+ 
   return(riparian_fraction)
 }
