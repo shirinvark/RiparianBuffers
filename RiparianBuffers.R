@@ -86,7 +86,7 @@ defineModule(sim, list(
     )
     
   ),
- 
+  outputObjects = bindrows(
     createsOutput(
       objectName  = "Hydrology_streams",
       objectClass = "SpatVector",
