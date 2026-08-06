@@ -3,16 +3,11 @@ RiparianInit <- function(sim) {
   ## 0) CHECK inputs
   ## ---------------------------------------------------------
   stopifnot(inherits(sim$PlanningGrid, "SpatRaster"))
-  stopifnot(inherits(sim$jurisdiction, "SpatVector"))
+  stopifnot(inherits(sim$jurisdictionMap, "SpatRaster"))
+  stopifnot(is.data.frame(sim$jurisdictionLookup))
   stopifnot(inherits(sim$Hydrology_streams, "SpatVector"))
   stopifnot(inherits(sim$Hydrology_lakes, "SpatVector"))
   stopifnot(is.data.frame(sim$riparianBufferPolicy))
-  ## ---------------------------------------------------------
-  ## 0b) CHECK jurisdiction attributes
-  ## ---------------------------------------------------------
-  if (!"jurisdiction" %in% names(sim$jurisdiction)) {
-    stop("sim$jurisdiction must contain a 'jurisdiction' attribute")
-  }
   
   ## ---------------------------------------------------------
   ## 1) Policy
@@ -38,10 +33,7 @@ RiparianInit <- function(sim) {
   )
   terra::values(hydro_template) <- NA_real_
 
-  
-  ## ---------------------------------------------------------
-  ## 3) Classify hydrology
-  ## ---------------------------------------------------------
+ 
   ## ---------------------------------------------------------
   ## 3) Classify hydrology
   ## ---------------------------------------------------------
@@ -92,34 +84,42 @@ RiparianInit <- function(sim) {
     
     return(invisible(sim))
   }
+
   ## ---------------------------------------------------------
   ## 4) Jurisdiction raster
   ## ---------------------------------------------------------
-  jurisRaster <- terra::rasterize(
-    sim$jurisdiction,
+  
+  jurisRaster <- terra::resample(
+    sim$jurisdictionMap,
     hydro_template,
-    field = "jurisdiction"
+    method = "near"
   )
   
- 
   ## ---------------------------------------------------------
   ## 5) Build bufferRaster
   ## ---------------------------------------------------------
+  
   bufferRaster <- hydro_template
   terra::values(bufferRaster) <- NA_real_
   
-  juris_codes <- unique(na.omit(sim$jurisdiction$jurisdiction))
-  juris_codes <- as.character(juris_codes)
+  juris_lookup <- sim$jurisdictionLookup
   
-  for (j in juris_codes) {
+  for (i in seq_len(nrow(juris_lookup))) {
     
-    row <- policy[policy$jurisdiction == j, ]
+    j_id   <- juris_lookup$ID[i]
+    j_name <- juris_lookup$jurisdiction[i]
+    
+    row <- policy[policy$jurisdiction == j_name, ]
+    
     if (nrow(row) == 0) {
       row <- policy[policy$jurisdiction == "default", ]
     }
+    
     if (nrow(row) == 0) {
-      stop(paste("No riparian policy for jurisdiction:", j))
+      stop(paste("No riparian policy for jurisdiction:", j_name))
     }
+    
+    
     
     ## small streams
     # mask <- terra::rasterize(
@@ -145,7 +145,7 @@ RiparianInit <- function(sim) {
     )
     
   
-    bufferRaster[jurisRaster == j & mask == 1] <- row$small_stream
+    bufferRaster[jurisRaster == j_id & mask == 1] <- row$small_stream
    
     ## large streams
     # mask <- terra::rasterize(
@@ -159,7 +159,7 @@ RiparianInit <- function(sim) {
       field = 1,
       touches = TRUE
     )
-    bufferRaster[jurisRaster == j & mask == 1] <- row$large_stream
+    bufferRaster[jurisRaster == j_id & mask == 1] <- row$large_stream
     
     ## small lakes
     #  mask <- terra::rasterize(
@@ -175,7 +175,7 @@ RiparianInit <- function(sim) {
       touches = TRUE
     )
     
-    bufferRaster[jurisRaster == j & mask == 1] <- row$small_lake
+    bufferRaster[jurisRaster == j_id & mask == 1] <- row$small_lake
     
     ## large lakes
     # mask <- terra::rasterize(
@@ -190,8 +190,7 @@ RiparianInit <- function(sim) {
       field = 1,
       touches = TRUE
     )
-    print(mask)
-    bufferRaster[jurisRaster == j & mask == 1] <- row$large_lake
+    bufferRaster[jurisRaster == j_id & mask == 1] <- row$large_lake
   }
  
   ## ---------------------------------------------------------

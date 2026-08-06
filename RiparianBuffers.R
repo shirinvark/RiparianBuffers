@@ -48,7 +48,25 @@ defineModule(sim, list(
       desc        = "Coarse-resolution PlanningGrid supplied by upstream module",
       sourceURL   = NA
     ),
-    
+    expectsInput(
+      objectName  = "Jurisdiction",
+      objectClass = c("SpatVector", "sf"),
+      desc        = paste(
+        "Jurisdiction boundaries supplied by the upstream data-preparation module;",
+        "downloaded internally from the default source if not supplied."
+      ),
+      sourceURL   = NA
+    ),
+    expectsInput(
+      objectName  = "jurisdictionMap",
+      objectClass = "SpatRaster",
+      desc        = "Jurisdiction raster supplied by the upstream data-preparation module."
+    ),
+    expectsInput(
+      objectName  = "jurisdictionLookup",
+      objectClass = "data.frame",
+      desc        = "Lookup table linking jurisdiction raster IDs to jurisdiction names."
+    ),
     expectsInput(
       objectName  = "riparianBufferPolicy",
       objectClass = "data.frame",
@@ -68,12 +86,7 @@ defineModule(sim, list(
     )
     
   ),
-  outputObjects =  bindrows(
-    createsOutput(
-      objectName  = "jurisdiction",
-      objectClass = c("sf", "SpatVector"),
-      desc        = "Canadian jurisdictioncial boundaries (ON, QC, NB, NS, PE, NL) cropped to study area"
-    ),
+ 
     createsOutput(
       objectName  = "Hydrology_streams",
       objectClass = "SpatVector",
@@ -131,17 +144,18 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   ## ---- Ensure studyArea exists ----
   SpaDES.core::checkObject(sim, "studyArea")
   #SpaDES.core::checkObject(sim, "PlanningGrid", "SpatRaster")
+ 
+  # =========================================================
   ## ---------------------------------------------------------
+  ## 1) PlanningGrid
+  ##
+  ## Expected from the upstream data-preparation module.
+  ## If not supplied, create a default 240 m PlanningGrid.
   ## ---------------------------------------------------------
-  # =========================================================
-  # 1) PlanningGrid
-  # =========================================================
   
-  # =========================================================
-  # 1) PlanningGrid
-  # =========================================================
-  
-  if (!inherits(sim$rasterToMatch, "SpatRaster")) {
+  if (!SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
+    
+    message("▶ PlanningGrid not supplied upstream; building locally...")
     
     study_v <- if (inherits(sim$studyArea, "SpatVector")) {
       sim$studyArea
@@ -149,15 +163,16 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
       terra::vect(sim$studyArea)
     }
     
-    sim$rasterToMatch <- terra::rast(
+    sim$PlanningGrid <- terra::rast(
       ext = terra::ext(study_v),
       resolution = 240,
       crs = terra::crs(study_v)
     )
+    
+    terra::values(sim$PlanningGrid) <- 1
   }
   
-  sim$PlanningGrid <- sim$rasterToMatch
-  terra::values(sim$PlanningGrid) <- 1
+  message("✔ PlanningGrid ready.")
   ## -------------------------
   ## riparianBufferPolicy
   ## -------------------------
@@ -180,10 +195,92 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   ## -------------------------
   ##  (jurisdiction)
   ## -------------------------
-  if (!SpaDES.core::suppliedElsewhere("jurisdiction", sim)) {
-    sim <- buildjurisdiction(sim)
+  ## ---------------------------------------------------------
+  ## Jurisdiction
+  ##
+  ## Expected from the upstream data-preparation module.
+  ## If not supplied, download the default jurisdiction layer.
+  ## ---------------------------------------------------------
+  
+  if (!SpaDES.core::suppliedElsewhere("Jurisdiction", sim)) {
+    
+    message("▶ Jurisdiction not supplied upstream; downloading default layer...")
+    
+    studyArea_sf <- if (inherits(sim$studyArea, "sf")) {
+      sim$studyArea
+    } else {
+      sf::st_as_sf(sim$studyArea)
+    }
+    
+    sim$Jurisdiction <- Cache(
+      prepInputs,
+      url = "https://drive.google.com/uc?export=download&id=1rJQCUJXN3m0pGBGo-bmf4qDfiZbCAg1p",
+      destinationPath = file.path(dPath, "Jurisdiction"),
+      targetFile = file.path(
+        "politicalboundaries_shapefile",
+        "NA_PoliticalDivisions",
+        "data",
+        "boundaries_p_2021_v3.shp"
+      ),
+      fun = terra::vect,
+      cropTo = studyArea_sf,
+      projectTo = studyArea_sf
+    )
   }
   
+  message(
+    "✔ Jurisdiction ready. Features: ",
+    nrow(sim$Jurisdiction)
+  )
+  ## ---------------------------------------------------------
+  ## Jurisdiction raster + lookup
+  ##
+  ## Expected from the upstream data-preparation module.
+  ## If not supplied, build locally from Jurisdiction.
+  ## ---------------------------------------------------------
+  
+  if (
+    !SpaDES.core::suppliedElsewhere("jurisdictionMap", sim) ||
+    !SpaDES.core::suppliedElsewhere("jurisdictionLookup", sim)
+  ) {
+    
+    message("▶ Jurisdiction products not supplied upstream; building locally...")
+    
+    if (!terra::same.crs(sim$Jurisdiction, sim$PlanningGrid)) {
+      sim$Jurisdiction <- terra::project(
+        sim$Jurisdiction,
+        terra::crs(sim$PlanningGrid)
+      )
+    }
+    
+    ## Add integer ID
+    sim$Jurisdiction$ID <- seq_len(nrow(sim$Jurisdiction))
+    
+    ## Build lookup table
+    sim$jurisdictionLookup <- data.frame(
+      ID = sim$Jurisdiction$ID,
+      jurisdiction = sim$Jurisdiction$NAME_En,
+      nation = sim$Jurisdiction$COUNTRY,
+      stringsAsFactors = FALSE
+    )
+    
+    ## Rasterize using integer ID
+    sim$jurisdictionMap <- terra::rasterize(
+      sim$Jurisdiction,
+      sim$PlanningGrid,
+      field = "ID"
+    )
+    
+    names(sim$jurisdictionMap) <- "jurisdiction"
+    
+    ## Attach jurisdiction names as raster levels
+    levels(sim$jurisdictionMap) <- sim$jurisdictionLookup[
+      ,
+      c("ID", "jurisdiction")
+    ]
+  }
+  
+  message("✔ jurisdictionMap and jurisdictionLookup ready.")
   ## -------------------------
   ## Hydrology
   ## -------------------------
