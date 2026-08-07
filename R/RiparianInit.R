@@ -104,12 +104,29 @@ RiparianInit <- function(sim) {
   
   juris_lookup <- sim$jurisdictionLookup
   
+  ## Translate full jurisdiction names from jurisdictionLookup
+  ## to the codes used in riparianBufferPolicy
+  jurisdiction_codes <- c(
+    "Ontario"                   = "ON",
+    "Quebec"                    = "QC",
+    "New Brunswick"             = "NB",
+    "Nova Scotia"               = "NS",
+    "Prince Edward Island"      = "PE",
+    "Newfoundland and Labrador" = "NL"
+  )
+  
   for (i in seq_len(nrow(juris_lookup))) {
     
     j_id   <- juris_lookup$ID[i]
     j_name <- juris_lookup$jurisdiction[i]
     
-    row <- policy[policy$jurisdiction == j_name, ]
+    j_code <- unname(jurisdiction_codes[j_name])
+    
+    if (is.na(j_code)) {
+      j_code <- "default"
+    }
+    
+    row <- policy[policy$jurisdiction == j_code, ]
     
     if (nrow(row) == 0) {
       row <- policy[policy$jurisdiction == "default", ]
@@ -118,6 +135,8 @@ RiparianInit <- function(sim) {
     if (nrow(row) == 0) {
       stop(paste("No riparian policy for jurisdiction:", j_name))
     }
+    
+    ## small streams
     
     
     
