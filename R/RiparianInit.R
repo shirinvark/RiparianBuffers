@@ -138,21 +138,6 @@ RiparianInit <- function(sim) {
     
     ## small streams
     
-    
-    
-    ## small streams
-    # mask <- terra::rasterize(
-    # streams[streams$hydro_class == "small_stream", ],
-    # hydro_template,
-    #touches = TRUE
-    #)
-    # mask <- terra::rasterize(
-    #  streams[streams$hydro_class == "small_stream", ],
-    # hydro_template,
-    #field = 1,
-    #touches = TRUE
-    #)
-    
     mask <- terra::rasterize(
       terra::buffer(
         streams[streams$hydro_class == "small_stream", ],
@@ -167,11 +152,7 @@ RiparianInit <- function(sim) {
     bufferRaster[jurisRaster == j_id & mask == 1] <- row$small_stream
    
     ## large streams
-    # mask <- terra::rasterize(
-    # streams[streams$hydro_class == "large_stream", ],
-    # hydro_template,
-    # touches = TRUE
-    # )
+
     mask <- terra::rasterize(
       streams[streams$hydro_class == "large_stream", ],
       hydro_template,
@@ -181,12 +162,7 @@ RiparianInit <- function(sim) {
     bufferRaster[jurisRaster == j_id & mask == 1] <- row$large_stream
     
     ## small lakes
-    #  mask <- terra::rasterize(
-    #   lakes[lakes$hydro_class == "small_lake", ],
-    # hydro_template,
-    # touches = TRUE
-    # )
-    ## small lakes
+   
     mask <- terra::rasterize(
       lakes[lakes$hydro_class == "small_lake", ],
       hydro_template,
@@ -197,12 +173,7 @@ RiparianInit <- function(sim) {
     bufferRaster[jurisRaster == j_id & mask == 1] <- row$small_lake
     
     ## large lakes
-    # mask <- terra::rasterize(
-    #  lakes[lakes$hydro_class == "large_lake", ],
-    #hydro_template,
-    # touches = TRUE
-    #)
-    ## large lakes
+ 
     mask <- terra::rasterize(
       lakes[lakes$hydro_class == "large_lake", ],
       hydro_template,

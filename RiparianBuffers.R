@@ -145,7 +145,6 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   SpaDES.core::checkObject(sim, "studyArea")
   #SpaDES.core::checkObject(sim, "PlanningGrid", "SpatRaster")
  
-  # =========================================================
   ## ---------------------------------------------------------
   ## 1) PlanningGrid
   ##
@@ -193,9 +192,6 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   }
   
   ## -------------------------
-  ##  (jurisdiction)
-  ## -------------------------
-  ## ---------------------------------------------------------
   ## Jurisdiction
   ##
   ## Expected from the upstream data-preparation module.
