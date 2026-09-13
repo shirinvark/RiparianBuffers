@@ -18,7 +18,6 @@ defineModule(sim, list(
   reqdPkgs = list(
     "PredictiveEcology/SpaDES.core@development (>= 2.1.8.9001)",
     "terra",
-    "sf",
     "rnaturalearth",
     "reproducible"
   )
@@ -136,13 +135,24 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
 .inputObjects <- function(sim) {
   
   dPath <- getOption("reproducible.destinationPath")
+  
   if (is.null(dPath)) {
-    dPath <- file.path(tempdir(), "inputs")
+    stop(
+      "reproducible.destinationPath is not set. ",
+      "Set it to the project inputs directory before running the module."
+    )
   }
   
-  dir.create(dPath, recursive = TRUE, showWarnings = FALSE)
+  dPath <- asPath(dPath, 1)
+  
+  message(currentModule(sim), ": using input data path '", dPath, "'.")
   ## ---- Ensure studyArea exists ----
   SpaDES.core::checkObject(sim, "studyArea")
+  if (!inherits(sim$studyArea, "SpatVector")) {
+    sim$studyArea <- terra::vect(sim$studyArea)
+  }
+  
+  studyArea_v <- sim$studyArea
   #SpaDES.core::checkObject(sim, "PlanningGrid", "SpatRaster")
  
   ## ---------------------------------------------------------
@@ -154,24 +164,18 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("PlanningGrid", sim)) {
     
-    message("▶ PlanningGrid not supplied upstream; building locally...")
-    
-    study_v <- if (inherits(sim$studyArea, "SpatVector")) {
-      sim$studyArea
-    } else {
-      terra::vect(sim$studyArea)
-    }
+    message("PlanningGrid not supplied upstream; building locally...")
     
     sim$PlanningGrid <- terra::rast(
-      ext = terra::ext(study_v),
+      ext = terra::ext(studyArea_v),
       resolution = 240,
-      crs = terra::crs(study_v)
+      crs = terra::crs(studyArea_v)
     )
     
     terra::values(sim$PlanningGrid) <- 1
   }
   
-  message("✔ PlanningGrid ready.")
+  message("PlanningGrid ready.")
   ## -------------------------
   ## riparianBufferPolicy
   ## -------------------------
@@ -200,14 +204,9 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   
   if (!SpaDES.core::suppliedElsewhere("Jurisdiction", sim)) {
     
-    message("▶ Jurisdiction not supplied upstream; downloading default layer...")
+    message("Jurisdiction not supplied upstream; downloading default layer...")
     
-    studyArea_sf <- if (inherits(sim$studyArea, "sf")) {
-      sim$studyArea
-    } else {
-      sf::st_as_sf(sim$studyArea)
-    }
-    
+   
     sim$Jurisdiction <- Cache(
       prepInputs,
       url = "https://drive.google.com/uc?export=download&id=1rJQCUJXN3m0pGBGo-bmf4qDfiZbCAg1p",
@@ -219,13 +218,15 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
         "boundaries_p_2021_v3.shp"
       ),
       fun = terra::vect,
-      cropTo = studyArea_sf,
-      projectTo = studyArea_sf
+      cropTo = studyArea_v,
+      projectTo = studyArea_v
     )
   }
-  
+  if (!inherits(sim$Jurisdiction, "SpatVector")) {
+    sim$Jurisdiction <- terra::vect(sim$Jurisdiction)
+  }
   message(
-    "✔ Jurisdiction ready. Features: ",
+    "Jurisdiction ready. Features: ",
     nrow(sim$Jurisdiction)
   )
   ## ---------------------------------------------------------
@@ -240,7 +241,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
     !SpaDES.core::suppliedElsewhere("jurisdictionLookup", sim)
   ) {
     
-    message("▶ Jurisdiction products not supplied upstream; building locally...")
+    message("Jurisdiction products not supplied upstream; building locally...")
     
     if (!terra::same.crs(sim$Jurisdiction, sim$PlanningGrid)) {
       sim$Jurisdiction <- terra::project(
@@ -276,12 +277,12 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
     ]
   }
   
-  message("✔ jurisdictionMap and jurisdictionLookup ready.")
+  message("jurisdictionMap and jurisdictionLookup ready.")
   ## -------------------------
   ## Hydrology
   ## -------------------------
   if (!SpaDES.core::suppliedElsewhere("Hydrology_streams", sim)) {    
-    message("▶ Downloading HydroRIVERS...")
+    message("Downloading HydroRIVERS...")
     
     streams <- Cache(
       prepInputs,
@@ -298,7 +299,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   }
   
   if (!SpaDES.core::suppliedElsewhere("Hydrology_lakes", sim)) {    
-    message("▶ Downloading HydroLAKES...")
+    message("Downloading HydroLAKES...")
     
     lakes <- Cache(
       prepInputs,
@@ -315,7 +316,7 @@ doEvent.RiparianBuffers <- function(sim, eventTime, eventType) {
   }
   
   message(
-    "✔ Hydrology ready: ",
+    "Hydrology ready: ",
     nrow(sim$Hydrology_streams), " streams, ",
     nrow(sim$Hydrology_lakes), " lakes."
   )

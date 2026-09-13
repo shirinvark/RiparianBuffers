@@ -106,15 +106,6 @@ buildRiparianFraction <- function(
   #Case 2 =========================================================
   # aligned high-resolution template
   
-  # CASE 2 =========================================================
-  ## ---- FIX terra::ifel NA bug ----
-  # hydro_r <- terra::rasterize(
-  #  streams,
-  #  hydro_template,
-  # field = 1,
-  #  background = NA
-  #)
-  
   hydro_r <- terra::rasterize(
     terra::buffer(streams, width = 100),
     hydro_template,
@@ -157,10 +148,10 @@ buildRiparianFraction <- function(
   
   cond <- dist_r <= bufferRaster
   
-  # هر NA → FALSE
+  # ---- NA → FALSE
   cond[is.na(cond)] <- FALSE
   
-  # logical → numeric {0,1}
+  # ---- logical → numeric {0,1}
   rip_hi <- cond * 1
   
   fact <- max(1, round(res(PlanningGrid)[1] / hydroRaster_m))
